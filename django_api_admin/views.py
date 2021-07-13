@@ -1,7 +1,7 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django_api_admin.serializers import LoginSerializer, UserSerializer
+from django_api_admin.serializers import LoginSerializer, UserSerializer, PasswordChangeSerializer
 from django.contrib.auth import login, logout
 from django.utils.translation import gettext_lazy as _
 
@@ -26,6 +26,10 @@ class LoginView(APIView):
 
 
 class LogoutView(APIView):
+    """
+    logout and display a 'your are logged out ' message.
+    """
+
     def get(self, request):
         user_serializer = UserSerializer(request.user)
         message = _("You are logged out.")
@@ -34,3 +38,16 @@ class LogoutView(APIView):
 
     def post(self, request):
         return self.get(request)
+
+
+class PasswordChangeView(APIView):
+    """
+        Handle the "change password" task -- both form display and validation.
+    """
+
+    def post(self, request):
+        serializer = PasswordChangeSerializer(data=request.data, context={'user': request.user})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': _('Your password was changed')}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
