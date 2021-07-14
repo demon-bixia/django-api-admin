@@ -1,12 +1,11 @@
 from django.contrib.auth import get_user_model
-from django.urls import reverse
-from rest_framework.test import APITestCase, URLPatternsTestCase, APIRequestFactory, force_authenticate
-from django_api_admin.views import LoginView, LogoutView, PasswordChangeView, IndexView
 from django.urls import path
-from django_api_admin.sites import APIAdminSite, site
-from django_api_admin.models import Author
+from django.urls import reverse
 from rest_framework.renderers import JSONRenderer
-from django.apps import apps
+from rest_framework.test import APITestCase, URLPatternsTestCase, APIRequestFactory, force_authenticate
+
+from django_api_admin.models import Author
+from django_api_admin.sites import site
 
 UserModel = get_user_model()
 renderer = JSONRenderer()

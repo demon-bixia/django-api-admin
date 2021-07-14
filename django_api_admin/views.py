@@ -1,9 +1,8 @@
+from django.contrib.auth import login, logout
+from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django_api_admin.serializers import LoginSerializer, UserSerializer, PasswordChangeSerializer
-from django.contrib.auth import login, logout
-from django.utils.translation import gettext_lazy as _
 
 
 class LoginView(APIView):
@@ -11,11 +10,14 @@ class LoginView(APIView):
     Allow users to login using username and password
     """
 
+    serializer_class = None
+    user_serializer_class = None
+
     def post(self, request, extra_context=None):
-        serializer = LoginSerializer(data=request.data, context={'request': request})
+        serializer = self.serializer_class(data=request.data, context={'request': request})
         if serializer.is_valid():
             login(request, serializer.get_user())
-            user_serializer = UserSerializer(request.user)
+            user_serializer = self.user_serializer_class(request.user)
             return Response({'user': user_serializer.data, **(extra_context or {})}, status=status.HTTP_200_OK)
 
         for error in serializer.errors['non_field_errors']:
@@ -29,9 +31,10 @@ class LogoutView(APIView):
     """
     logout and display a 'your are logged out ' message.
     """
+    user_serializer_class = None
 
     def get(self, request, extra_context=None):
-        user_serializer = UserSerializer(request.user)
+        user_serializer = self.user_serializer_class(request.user)
         message = _("You are logged out.")
         logout(request)
         return Response({'user': user_serializer.data, 'message': message, **(extra_context or {})},
@@ -45,9 +48,10 @@ class PasswordChangeView(APIView):
     """
         Handle the "change password" task -- both form display and validation.
     """
+    serializer_class = None
 
     def post(self, request, extra_context=None):
-        serializer = PasswordChangeSerializer(data=request.data, context={'user': request.user})
+        serializer = self.serializer_class(data=request.data, context={'user': request.user})
         if serializer.is_valid():
             serializer.save()
             return Response({'message': _('Your password was changed'), **(extra_context or {})},
