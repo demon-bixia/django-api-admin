@@ -1,5 +1,6 @@
 from django.contrib.auth import login, logout
 from django.utils.translation import gettext_lazy as _
+from django.views.i18n import JSONCatalog
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -97,3 +98,9 @@ class AppIndexView(APIView):
         }
 
         return Response(data, status=status.HTTP_200_OK)
+
+
+class TranslationCatalogView(APIView):
+    def get(self, request, packages):
+        response = JSONCatalog.as_view(packages=packages)(request)
+        return Response({'context': response.content}, status=status.HTTP_200_OK)

@@ -51,9 +51,10 @@ class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
         user.set_password('password')
         user.save()
 
+        self.client.force_login(user=user)
         url = reverse('admin:logout')
         response = self.client.post(url)
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 200)
         # self.assertIsNotNone(response.get('message', None))
 
     def test_password_change(self):
@@ -130,3 +131,38 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
         url = reverse('admin:app_list', kwargs={'app_label': app_label})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+
+    def test_i18n_javascript(self):
+        # test if the i18n_javascript view works
+        url = reverse('admin:language_catalog')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNotNone(response.data)
+
+    def test_permission_denied(self):
+        # create a non-staff user
+        user = UserModel.objects.create(username='test')
+        user.set_password('password')
+        user.is_staff = False
+        user.save()
+
+        self.client.force_login(user)
+
+        # test if app_index denies permission
+        app_label = Author._meta.app_label
+        url = reverse('admin:app_list', kwargs={'app_label': app_label})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)
+        # test if index denies permission
+        url = reverse('admin:index')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)
+        # test if logout denies permission
+        url = reverse('admin:logout')
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 403)
+        # test if password change denies permission
+        url = reverse('admin:password_change')
+        response = self.client.post(url, {'old_password': 'new_password', 'new_password1': 'new_password',
+                                          'new_password2': 'new_password'})
+        self.assertEqual(response.status_code, 403)
