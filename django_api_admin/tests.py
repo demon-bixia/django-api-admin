@@ -1,4 +1,6 @@
 from django.contrib.auth import get_user_model
+from django.contrib.contenttypes.models import ContentType
+from django.http import JsonResponse
 from django.urls import path
 from django.urls import reverse
 from rest_framework.renderers import JSONRenderer
@@ -45,7 +47,6 @@ class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIsNotNone(response.data.get('message', None))
 
-    # todo make it work with status code 200
     def test_logout_user_not_logged_in(self):
         user = UserModel.objects.create_superuser(username='admin')
         user.set_password('password')
@@ -85,9 +86,15 @@ class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
 site.register(Author)
 
 
+def author_detail_view(request, pk):
+    author = Author.objects.filter(pk=pk).first()
+    return JsonResponse({'name': author.name})
+
+
 class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
     urlpatterns = [
         path('admin/', site.urls),
+        path('author/<int:pk>/', author_detail_view, name='author-detail')
     ]
 
     def setUp(self) -> None:
@@ -166,3 +173,15 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
         response = self.client.post(url, {'old_password': 'new_password', 'new_password1': 'new_password',
                                           'new_password2': 'new_password'})
         self.assertEqual(response.status_code, 403)
+
+    def test_view_on_site_view(self):
+        # create an author
+        Author.objects.create(name='muhammad')
+
+        # test if view_on_site view works
+        content_type_id = ContentType.objects.get(app_label='django_api_admin', model='author').id
+        object_id = Author.objects.first().id
+        url = reverse('admin:view_on_site', kwargs={'content_type_id': content_type_id, 'object_id': object_id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['url'], 'http://testserver/author/1/')

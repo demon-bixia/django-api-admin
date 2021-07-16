@@ -1,19 +1,13 @@
 from functools import update_wrapper
 
 from django.contrib.admin import ModelAdmin, AdminSite
-from django.urls import reverse, re_path
+from django.urls import re_path
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
-from django.views.i18n import JSONCatalog
-from rest_framework import status
-from rest_framework.response import Response
 
 from django_api_admin import views as api_views
 from django_api_admin.permissions import IsAdminUser
 from django_api_admin.serializers import LoginSerializer, UserSerializer, PasswordChangeSerializer
-from rest_framework.exceptions import PermissionDenied
-
-from django_api_admin.views import TranslationCatalogView
 
 
 class AlreadyRegistered(Exception):
@@ -55,7 +49,7 @@ class APIAdminSite(AdminSite):
         return update_wrapper(inner, view)
 
     def get_urls(self):
-        # from django.contrib.contenttypes import views as contenttype_views
+        from django.contrib.contenttypes import views as contenttype_views
         from django.urls import path, include
 
         def wrap(view, cacheable=False):
@@ -78,8 +72,8 @@ class APIAdminSite(AdminSite):
             ),
             path('autocomplete/', wrap(self.autocomplete_view), name='autocomplete'),
             path('language_catalog/', wrap(self.language_catalog, cacheable=True), name='language_catalog'),
-            # todo understand what the view on site view does.
-            # path('r/<int:content_type_id>/<path:object_id>/',wrap(contenttype_views.shortcut),name='view_on_site',),
+            path('r/<int:content_type_id>/<path:object_id>/', wrap(api_views.ViewOnSiteView.as_view()),
+                 name='view_on_site', ),
         ]
 
         # Add in each model's views, and create a list of valid URLS for the
@@ -100,7 +94,7 @@ class APIAdminSite(AdminSite):
                 re_path(regex, wrap(self.app_index), name='app_list'),
             ]
 
-        # todo understand what final catch all view means
+        # redirects users to the correct url. we don't need this on an api.
         if self.final_catch_all_view:
             urlpatterns.append(re_path(r'(?P<url>.*)$', wrap(self.catch_all_view)))
 
@@ -140,15 +134,15 @@ class APIAdminSite(AdminSite):
         }
         return api_views.AppIndexView.as_view(**defaults)(request, self, app_label, extra_context)
 
-    # todo understand i18n_javascript and language catalog means.
     def language_catalog(self, request, extra_context=None):
         """
-        Returns the selected language catalog as JsonObject.
+        returns the translation catalog that the django admin uses
+        as json.
         """
         defaults = {
             'permission_classes': self.default_permissions,
         }
-        return TranslationCatalogView.as_view(**defaults)(request, packages=['django_api_admin'])
+        return api_views.TranslationCatalogView.as_view(**defaults)(request, packages=['django.contrib.admin'])
 
 
 site = APIAdminSite()
