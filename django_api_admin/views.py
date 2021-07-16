@@ -6,9 +6,33 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import gettext_lazy as _
 from django.views.i18n import JSONCatalog
 from rest_framework import status
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.reverse import reverse
 from rest_framework.views import APIView
 from rest_framework import exceptions
+
+
+
+@api_view(['GET'])
+def api_root(request, format=None):
+    from .sites import site
+
+    app_labels = [model._meta.app_label for model, model_admin in site._registry.items()]
+
+    data = {
+        'index': reverse('api_admin:index', request=request, format=format),
+        'apps': [reverse('api_admin:app_list', kwargs={'app_label': app_label}, request=request, format=format) for app_label in app_labels],
+    }
+
+    data.update({
+        'password_change': reverse('api_admin:password_change', request=request, format=format),
+        'logout': reverse('api_admin:logout', request=request, format=format)
+    }) if request.user.is_authenticated else data.update({
+        'login': reverse('api_admin:login', request=request, format=format),
+    })
+
+    return Response(data, status=status.HTTP_200_OK)
 
 
 class LoginView(APIView):

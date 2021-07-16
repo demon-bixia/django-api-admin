@@ -7,7 +7,9 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase, URLPatternsTestCase, APIRequestFactory, force_authenticate
 
 from django_api_admin.models import Author
-from django_api_admin.sites import site
+from .sites import APIAdminSite
+
+site = APIAdminSite(name='api_admin')
 
 UserModel = get_user_model()
 renderer = JSONRenderer()
@@ -15,7 +17,7 @@ renderer = JSONRenderer()
 
 class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
     urlpatterns = [
-        path('admin/', site.urls),
+        path('api_admin/', site.urls),
     ]
 
     def test_non_staff_user_login(self):
@@ -23,7 +25,7 @@ class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
         user.set_password('password')
         user.save()
 
-        url = reverse('admin:login')
+        url = reverse('api_admin:login')
         response = self.client.post(url, {'username': user.username, 'password': 'password'})
         self.assertEqual(response.status_code, 403)
 
@@ -32,7 +34,7 @@ class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
         user.set_password('password')
         user.save()
 
-        url = reverse('admin:login')
+        url = reverse('api_admin:login')
         response = self.client.post(url, {'username': user.username, 'password': 'password'})
         self.assertEqual(response.status_code, 200)
 
@@ -42,7 +44,7 @@ class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
         user.save()
 
         self.client.force_login(user=user)
-        url = reverse('admin:logout')
+        url = reverse('api_admin:logout')
         response = self.client.post(url)
         self.assertEqual(response.status_code, 200)
         self.assertIsNotNone(response.data.get('message', None))
@@ -53,7 +55,7 @@ class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
         user.save()
 
         self.client.force_login(user=user)
-        url = reverse('admin:logout')
+        url = reverse('api_admin:logout')
         response = self.client.post(url)
         self.assertEqual(response.status_code, 200)
         # self.assertIsNotNone(response.get('message', None))
@@ -63,7 +65,7 @@ class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
         user.set_password('password')
         user.save()
 
-        url = reverse('admin:password_change')
+        url = reverse('api_admin:password_change')
         self.client.force_login(user=user)
         response = self.client.post(url, {'old_password': 'password', 'new_password1': 'new_password',
                                           'new_password2': 'new_password'})
@@ -75,7 +77,7 @@ class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
         user.set_password('password')
         user.save()
 
-        url = reverse('admin:password_change')
+        url = reverse('api_admin:password_change')
         self.client.force_login(user=user)
         response = self.client.post(url, {'old_password': 'password', 'new_password1': 'something',
                                           'new_password2': 'something else'})
@@ -93,7 +95,7 @@ def author_detail_view(request, pk):
 
 class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
     urlpatterns = [
-        path('admin/', site.urls),
+        path('api_admin/', site.urls),
         path('author/<int:pk>/', author_detail_view, name='author-detail')
     ]
 
@@ -128,20 +130,20 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
 
     def test_index_view(self):
         # test if the index view works
-        url = reverse('admin:index')
+        url = reverse('api_admin:index')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
     def test_app_index_view(self):
         # test if the app_index view works
         app_label = Author._meta.app_label
-        url = reverse('admin:app_list', kwargs={'app_label': app_label})
+        url = reverse('api_admin:app_list', kwargs={'app_label': app_label})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
     def test_i18n_javascript(self):
         # test if the i18n_javascript view works
-        url = reverse('admin:language_catalog')
+        url = reverse('api_admin:language_catalog')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertIsNotNone(response.data)
@@ -157,19 +159,19 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
 
         # test if app_index denies permission
         app_label = Author._meta.app_label
-        url = reverse('admin:app_list', kwargs={'app_label': app_label})
+        url = reverse('api_admin:app_list', kwargs={'app_label': app_label})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 403)
         # test if index denies permission
-        url = reverse('admin:index')
+        url = reverse('api_admin:index')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 403)
         # test if logout denies permission
-        url = reverse('admin:logout')
+        url = reverse('api_admin:logout')
         response = self.client.post(url)
         self.assertEqual(response.status_code, 403)
         # test if password change denies permission
-        url = reverse('admin:password_change')
+        url = reverse('api_admin:password_change')
         response = self.client.post(url, {'old_password': 'new_password', 'new_password1': 'new_password',
                                           'new_password2': 'new_password'})
         self.assertEqual(response.status_code, 403)
@@ -181,7 +183,7 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
         # test if view_on_site view works
         content_type_id = ContentType.objects.get(app_label='django_api_admin', model='author').id
         object_id = Author.objects.first().id
-        url = reverse('admin:view_on_site', kwargs={'content_type_id': content_type_id, 'object_id': object_id})
+        url = reverse('api_admin:view_on_site', kwargs={'content_type_id': content_type_id, 'object_id': object_id})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['url'], 'http://testserver/author/1/')
