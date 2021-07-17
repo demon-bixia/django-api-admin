@@ -16,10 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django_api_admin.sites import site
-from django_api_admin.views import api_root
 
 urlpatterns = [
-    # path('admin/', admin.site.urls),
     path('apiadmin/', site.urls),
-    path('api/', api_root, name='root_view'),
 ]

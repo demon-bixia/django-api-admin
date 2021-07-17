@@ -1,9 +1,9 @@
-from django.urls import reverse
 from functools import update_wrapper
 
 from django.apps import apps
 from django.contrib.admin import ModelAdmin, AdminSite
 from django.urls import re_path, NoReverseMatch
+from django.urls import reverse
 from django.utils.text import capfirst
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
@@ -13,35 +13,35 @@ from django_api_admin.permissions import IsAdminUser
 from django_api_admin.serializers import LoginSerializer, UserSerializer, PasswordChangeSerializer
 
 
-class AlreadyRegistered(Exception):
-    pass
-
-
-class NotRegistered(Exception):
-    pass
-
-
 class APIAdminSite(AdminSite):
     """
     Encapsulates an instance of the django admin application.
 
     todo override register() to register a custom model admin.
+    todo clean admin site
     """
+    # default serializers
     login_serializer = None
     user_serializer = None
     password_change_serializer = None
-    final_catch_all_view = False
+
+    # default permissions
     default_permissions = [IsAdminUser, ]
+
+    # optional views
+    final_catch_all_view = False
+    api_root_view = True
 
     def __init__(self, default_admin_class=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.default_admin_class = default_admin_class or ModelAdmin
 
+    # todo remove admin namespace
     def _build_app_dict(self, request, label=None):
         """
-                Build the app dictionary. The optional `label` parameter filters models
-                of a specific app.
-                """
+        Build the app dictionary. The optional `label` parameter filters models
+        of a specific app.
+        """
         app_dict = {}
 
         if label:
@@ -120,7 +120,6 @@ class APIAdminSite(AdminSite):
         return update_wrapper(inner, view)
 
     def get_urls(self):
-        from django.contrib.contenttypes import views as contenttype_views
         from django.urls import path, include
 
         def wrap(view, cacheable=False):
@@ -132,7 +131,6 @@ class APIAdminSite(AdminSite):
 
         # Admin-site-wide views.
         urlpatterns = [
-            path('', wrap(self.index), name='index'),
             path('login/', self.login, name='login'),
             path('logout/', wrap(self.logout), name='logout'),
             path('password_change/', wrap(self.password_change, cacheable=True), name='password_change'),
@@ -146,6 +144,14 @@ class APIAdminSite(AdminSite):
             path('r/<int:content_type_id>/<path:object_id>/', wrap(api_views.ViewOnSiteView.as_view()),
                  name='view_on_site', ),
         ]
+
+        # if the api_root_view is True (default) set api root view as the view at the
+        # '/' url else make index view the view at the '/' url
+        if not self.api_root_view:
+            urlpatterns.append(path('', wrap(self.index), name='index'))
+        else:
+            urlpatterns.append(path('', wrap(self.root_view), name='api_root'), )
+            urlpatterns.append(path('admin_index/', wrap(self.index), name='index'), )
 
         # Add in each model's views, and create a list of valid URLS for the
         # app_index
@@ -218,6 +224,12 @@ class APIAdminSite(AdminSite):
             'permission_classes': self.default_permissions,
         }
         return api_views.TranslationCatalogView.as_view(**defaults)(request, packages=['django.contrib.admin'])
+
+    def root_view(self, request, extra_context=None):
+        defaults = {
+            'permission_classes': self.default_permissions,
+        }
+        return api_views.APIRootView.as_view(**defaults)(request, self, extra_context)
 
 
 site = APIAdminSite(name='api_admin')
