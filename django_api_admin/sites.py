@@ -31,12 +31,14 @@ class APIAdminSite(AdminSite):
     # optional views
     final_catch_all_view = False
     api_root_view = True
+    view_on_site_view = False
 
     def __init__(self, default_admin_class=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.default_admin_class = default_admin_class or ModelAdmin
 
     # todo remove admin namespace
+    # todo improve build app dict
     def _build_app_dict(self, request, label=None):
         """
         Build the app dictionary. The optional `label` parameter filters models
@@ -105,7 +107,7 @@ class APIAdminSite(AdminSite):
             return app_dict.get(label)
         return app_dict
 
-    def api_admin_view(self, view, cacheable=False):
+    def add_caching_and_csrf(self, view, cacheable=False):
         """
         Adds csrf token protection and caching to views.
         """
@@ -124,7 +126,7 @@ class APIAdminSite(AdminSite):
 
         def wrap(view, cacheable=False):
             def wrapper(*args, **kwargs):
-                return self.api_admin_view(view, cacheable)(*args, **kwargs)
+                return self.add_caching_and_csrf(view, cacheable)(*args, **kwargs)
 
             wrapper.admin_site = self
             return update_wrapper(wrapper, view)
@@ -141,17 +143,22 @@ class APIAdminSite(AdminSite):
             ),
             path('autocomplete/', wrap(self.autocomplete_view), name='autocomplete'),
             path('language_catalog/', wrap(self.language_catalog, cacheable=True), name='language_catalog'),
-            path('r/<int:content_type_id>/<path:object_id>/', wrap(api_views.ViewOnSiteView.as_view()),
-                 name='view_on_site', ),
+
         ]
 
-        # if the api_root_view is True (default) set api root view as the view at the
+        # if the api_root_view is False set api root view as the view at the
         # '/' url else make index view the view at the '/' url
         if not self.api_root_view:
             urlpatterns.append(path('', wrap(self.index), name='index'))
         else:
             urlpatterns.append(path('', wrap(self.root_view), name='api_root'), )
             urlpatterns.append(path('admin_index/', wrap(self.index), name='index'), )
+
+        # if view_on_site is True append the ViewOnSiteView in  urlpatterns
+        if self.view_on_site_view:
+            urlpatterns.append(
+                path('r/<int:content_type_id>/<path:object_id>/', wrap(api_views.ViewOnSiteView.as_view()),
+                     name='view_on_site', ), )
 
         # Add in each model's views, and create a list of valid URLS for the
         # app_index
@@ -179,9 +186,8 @@ class APIAdminSite(AdminSite):
 
     @property
     def urls(self):
-        return self.get_urls(), 'api_admin', self.name
+        return self.get_urls(), self.name, self.name
 
-    # todo choose the best place to add login permissions
     def login(self, request, extra_context=None):
         defaults = {
             'serializer_class': self.login_serializer or LoginSerializer,
@@ -216,20 +222,13 @@ class APIAdminSite(AdminSite):
         return api_views.AppIndexView.as_view(**defaults)(request, self, app_label, extra_context)
 
     def language_catalog(self, request, extra_context=None):
-        """
-        returns the translation catalog that the django admin uses
-        as json.
-        """
         defaults = {
             'permission_classes': self.default_permissions,
         }
         return api_views.TranslationCatalogView.as_view(**defaults)(request, packages=['django.contrib.admin'])
 
     def root_view(self, request, extra_context=None):
-        defaults = {
-            'permission_classes': self.default_permissions,
-        }
-        return api_views.APIRootView.as_view(**defaults)(request, self, extra_context)
+        return api_views.APIRootView.as_view()(request, self, extra_context)
 
 
 site = APIAdminSite(name='api_admin')

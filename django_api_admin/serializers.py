@@ -11,7 +11,7 @@ class InvalidUsage(Exception):
 
 class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(label='Password', write_only=True, required=True,
-                                     style={'input_type': 'password', })
+                                     style={'input_type': 'password'})
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -14,8 +14,9 @@ from rest_framework import exceptions
 
 
 class APIRootView(APIView):
-    permission_classes = None
-
+    """
+    An optional Root endpoint for the django_api_admin app
+    """
     def get(self, request, site, format=None):
         app_labels = [model._meta.app_label for model, model_admin in site._registry.items()]
 
@@ -110,6 +111,9 @@ class IndexView(APIView):
 
 
 class AppIndexView(APIView):
+    """
+    Lists models inside a given app.
+    """
     def get(self, request, admin_site, app_label, extra_context=None):
         app_dict = admin_site._build_app_dict(request, app_label)
 
@@ -129,6 +133,10 @@ class AppIndexView(APIView):
 
 
 class TranslationCatalogView(APIView):
+    """
+    Returns json object with django.contrib.admin i18n translation catalog
+    to be used by a client site javascript library
+    """
     def get(self, request, packages):
         response = JSONCatalog.as_view(packages=packages)(request)
         return Response({'context': response.content}, status=status.HTTP_200_OK)
