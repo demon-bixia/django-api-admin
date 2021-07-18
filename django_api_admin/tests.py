@@ -9,10 +9,11 @@ from rest_framework.test import APITestCase, URLPatternsTestCase, APIRequestFact
 from django_api_admin.models import Author
 from .sites import APIAdminSite
 
-site = APIAdminSite(name='api_admin')
-
 UserModel = get_user_model()
 renderer = JSONRenderer()
+
+site = APIAdminSite(name='api_admin')
+site.register(Author)
 
 
 class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
@@ -37,6 +38,15 @@ class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
         url = reverse('api_admin:login')
         response = self.client.post(url, {'username': user.username, 'password': 'password'})
         self.assertEqual(response.status_code, 200)
+
+    def test_access_to_login(self):
+        user = UserModel.objects.create(username='test')
+        user.set_password('password')
+        user.save()
+
+        url = reverse('api_admin:login')
+        response = self.client.get(url)
+        self.assertNotEqual(response.status_code, 403)
 
     def test_logout_user_logged_in(self):
         user = UserModel.objects.create_superuser(username='admin')
@@ -83,9 +93,6 @@ class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
                                           'new_password2': 'something else'})
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.data['non_field_errors'][0].code, 'password_mismatch')
-
-
-site.register(Author)
 
 
 def author_detail_view(request, pk):
@@ -177,7 +184,7 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_view_on_site_view(self):
-        if site.view_on_site_view:
+        if site.router_class.view_on_site_view:
             # create an author
             Author.objects.create(name='muhammad')
 
@@ -188,3 +195,19 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
             response = self.client.get(url)
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.data['url'], 'http://testserver/author/1/')
+
+    def test_api_root_view(self):
+        if site.router_class.include_root_view:
+            url = reverse('api_admin:api-root')
+            response = self.client.get(url)
+
+            self.assertNotEqual(response.status_code, 403)
+            self.assertEqual(response.status_code, 200)
+
+            key_found = False
+            for key, value in response.data.items():
+                if key == 'index':
+                    key_found = True
+                    break
+            if not key_found:
+                raise AssertionError('Site didn`t return api-root view')

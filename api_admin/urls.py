@@ -18,5 +18,5 @@ from django.urls import path
 from django_api_admin.sites import site
 
 urlpatterns = [
-    path('api_admin/', site.urls),
+     path('api_admin/', site.urls),
 ]
