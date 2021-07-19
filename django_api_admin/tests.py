@@ -1,4 +1,6 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.http import JsonResponse
 from django.urls import path
@@ -6,14 +8,11 @@ from django.urls import reverse
 from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase, URLPatternsTestCase, APIRequestFactory, force_authenticate
 
-from django_api_admin.models import Author
-from .sites import APIAdminSite
+from .models import Author
+from .sites import APIAdminSite, site
 
 UserModel = get_user_model()
 renderer = JSONRenderer()
-
-site = APIAdminSite(name='api_admin')
-site.register(Author)
 
 
 class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
@@ -193,8 +192,8 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
             object_id = Author.objects.first().id
             url = reverse('api_admin:view_on_site', kwargs={'content_type_id': content_type_id, 'object_id': object_id})
             response = self.client.get(url)
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.data['url'], 'http://testserver/author/1/')
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(response.get('location'), 'http://testserver/author/1/')
 
     def test_api_root_view(self):
         if site.router_class.include_root_view:

@@ -3,33 +3,42 @@ from django.utils.translation import gettext_lazy as _
 from django.views.i18n import JSONCatalog
 from rest_framework import status, viewsets
 from rest_framework.response import Response
+from rest_framework.reverse import reverse
 
 from django_api_admin.permissions import IsAdminUser
 from django_api_admin.serializers import LoginSerializer, UserSerializer, PasswordChangeSerializer
 
 
-# todo add custom caching and csrf checking
-class AdminSiteViewSet(viewsets.ViewSet):
+# todo design for customization
+class AdminSiteViewSet(viewsets.GenericViewSet):
     # default serializers
-    login_serializer_class = LoginSerializer
     user_serializer_class = UserSerializer
-    password_change_serializer_class = PasswordChangeSerializer
 
     # default permissions
     permission_classes = [IsAdminUser, ]
+
+    # action -> serializer
+    serializer_mapping = {
+        'login': LoginSerializer,
+        'password_change': PasswordChangeSerializer,
+    }
+
+    def get_serializer_class(self):
+        return self.serializer_mapping.get(self.action, None)
 
     def login(self, request, extra_context=None):
         """
         Allow users to login using username and password
         """
+        serializer_class = self.get_serializer_class()
 
-        serializer = self.login_serializer_class(data=request.data, context={'request': request})
+        serializer = serializer_class(data=request.data, context={'request': request})
         if serializer.is_valid():
             login(request, serializer.get_user())
             user_serializer = self.user_serializer_class(request.user)
             return Response({'user': user_serializer.data, **(extra_context or {})}, status=status.HTTP_200_OK)
 
-        for error in serializer.errors['non_field_errors']:
+        for error in serializer.errors.get('non_field_errors', []):
             if error.code == 'permission_denied':
                 return Response(serializer.errors, status=status.HTTP_403_FORBIDDEN)
 
@@ -49,8 +58,8 @@ class AdminSiteViewSet(viewsets.ViewSet):
         """
             Handle the "change password" task -- both form display and validation.
         """
-
-        serializer = self.password_change_serializer_class(data=request.data, context={'user': request.user})
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(data=request.data, context={'user': request.user})
         if serializer.is_valid():
             serializer.save()
             return Response({'message': _('Your password was changed'), **(extra_context or {})},
@@ -62,14 +71,22 @@ class AdminSiteViewSet(viewsets.ViewSet):
         Return json object that lists all of the installed
         apps that have been registered by the admin site.
         """
+        # todo is importing the site here a good idea
         from django_api_admin.sites import site as admin_site
 
         app_list = admin_site.get_app_list(request)
 
+        # add a url to app_index in every app in app_list
+        for app in app_list:
+            url = reverse('api_admin:app_list', kwargs={'app_label': app['app_label']}, request=request)
+            app['url'] = url
+
         data = {
-            **admin_site.each_context(request),
             'app_list': app_list,
-            **(extra_context or {}),
+            'context': {
+                **admin_site.each_context(request),
+                **(extra_context or {}),
+            },
         }
 
         request.current_app = admin_site.name
@@ -90,10 +107,12 @@ class AdminSiteViewSet(viewsets.ViewSet):
         # Sort the models alphabetically within each app.
         app_dict['models'].sort(key=lambda x: x['name'])
         data = {
-            **admin_site.each_context(request),
-            'app_list': [app_dict],
             'app_label': app_label,
-            **(extra_context or {}),
+            'app': app_dict,
+            'context': {
+                **admin_site.each_context(request),
+                **(extra_context or {}),
+            },
         }
 
         return Response(data, status=status.HTTP_200_OK)
@@ -105,4 +124,3 @@ class AdminSiteViewSet(viewsets.ViewSet):
         """
         response = JSONCatalog.as_view(packages=['django.contrib.admin'])(request)
         return Response({'context': response.content}, status=status.HTTP_200_OK)
-1

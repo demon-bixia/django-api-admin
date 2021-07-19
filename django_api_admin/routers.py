@@ -77,6 +77,8 @@ class AdminRouter(SimpleRouter):
     def __init__(self, admin_site, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.admin_site = self.admin_site or admin_site
+
         # if there is no root view the index view url should be '/'
         admin_index_route = Route(
             url=r'^$',
@@ -99,21 +101,7 @@ class AdminRouter(SimpleRouter):
             )
         self.routes.insert(0, admin_index_route)
 
-        self.admin_site = self.admin_site or admin_site
-        valid_app_labels = [model._meta.app_label for model, model_admin in self.admin_site._registry.items()]
-        if valid_app_labels:
-            # add the app_label route
-            self.routes.append(Route(
-                url=r'^(?P<app_label>' + '|'.join(valid_app_labels) + ')/$',
-                mapping={
-                    'get': 'app_index',
-                },
-                name='app_list',
-                detail=True,
-                initkwargs={'suffix': 'Models'}
-            ), )
-
-    def get_default_basename(self, viewset):
+    def get_default_basename(self, viewset=None):
         return 'admin'
 
     def get_urls(self):
@@ -123,21 +111,34 @@ class AdminRouter(SimpleRouter):
         """
         urls = super().get_urls()
 
-        if self.final_catch_all_view:
-            catch_all_view = self.admin_site.catch_all_view
-            catch_all_view_url = re_path(r'(?P<url>.*)$', catch_all_view)
-            urls.append(catch_all_view_url)
-
-        if self.view_on_site_view:
-            view_on_site_url = path('r/<int:content_type_id>/<path:object_id>/', view_on_site)
-            urls.append(view_on_site_url)
-
         if self.include_root_view:
-            excluded_url_names = [route.name for route in self.routes if route.detail]
+            # view_on_site view and the rest of the urls that are detail
+            excluded_url_names = ['view_on_site', 'final_catch_all',
+                                  *[route.name for route in self.routes if route.detail]]
             root_urls = [url for url in urls if url.name not in excluded_url_names]
             root_view = AdminAPIRootView.as_view(root_urls=root_urls)
             root_url = re_path(r'^$', root_view, name='api-root')
             urls.append(root_url)
+
+        # add the app detail view
+        valid_app_labels = [model._meta.app_label for model, model_admin in self.admin_site._registry.items()]
+        for prefix, viewset, basename in self.registry:
+            if prefix == self.admin_site.name:
+                regex = r'^(?P<app_label>' + '|'.join(valid_app_labels) + ')/$'
+                mapping = self.get_method_map(viewset, {'get': 'app_index'})
+                initkwargs = {'suffix': 'Models', 'detail': True, 'basename': basename}
+                view = viewset.as_view(mapping, **initkwargs)
+                urls.append(re_path(regex, view, name='app_list'))
+
+        if self.view_on_site_view:
+            view_on_site_url = path('r/<int:content_type_id>/<path:object_id>/', view_on_site, name='view_on_site')
+            urls.append(view_on_site_url)
+
+        # finally add the final catch all view
+        if self.final_catch_all_view:
+            catch_all_view = self.admin_site.catch_all_view
+            catch_all_view_url = re_path(r'(?P<url>.*)$', catch_all_view, name='final_catch_all')
+            urls.append(catch_all_view_url)
 
         return urls
 
