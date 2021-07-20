@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # my apps
     'django_api_admin.apps.DjangoApiAdminConfig',
+    'custom_django_api_admin.apps.CustomDjangoApiAdminConfig',
     #  3rd party apps
     'rest_framework',
 ]
