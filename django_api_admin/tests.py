@@ -183,7 +183,7 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_view_on_site_view(self):
-        if site.router_class.view_on_site_view:
+        if site.include_view_on_site_view:
             # create an author
             Author.objects.create(name='muhammad')
 
@@ -196,7 +196,7 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
             self.assertEqual(response.get('location'), 'http://testserver/author/1/')
 
     def test_api_root_view(self):
-        if site.router_class.include_root_view:
+        if site.include_root_view:
             url = reverse('api_admin:api-root')
             response = self.client.get(url)
 
