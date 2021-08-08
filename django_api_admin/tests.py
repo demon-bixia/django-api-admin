@@ -1,6 +1,4 @@
 from django.contrib.auth import get_user_model
-from django.contrib.auth.admin import UserAdmin
-from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.http import JsonResponse
 from django.urls import path
@@ -9,7 +7,8 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase, URLPatternsTestCase, APIRequestFactory, force_authenticate
 
 from .models import Author
-from .sites import APIAdminSite, site
+from .options import APIModelAdmin
+from .sites import site
 
 UserModel = get_user_model()
 renderer = JSONRenderer()
@@ -19,6 +18,11 @@ class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
     urlpatterns = [
         path('api_admin/', site.urls),
     ]
+
+    def setUp(self) -> None:
+        self.admin_user = UserModel.objects.create_superuser(username='admin')
+        self.admin_user.set_password('password')
+        self.admin_user.save()
 
     def test_non_staff_user_login(self):
         user = UserModel.objects.create(username='test')
@@ -30,12 +34,8 @@ class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_staff_user_login(self):
-        user = UserModel.objects.create_superuser(username='admin')
-        user.set_password('password')
-        user.save()
-
         url = reverse('api_admin:login')
-        response = self.client.post(url, {'username': user.username, 'password': 'password'})
+        response = self.client.post(url, {'username': self.admin_user.username, 'password': 'password'})
         self.assertEqual(response.status_code, 200)
 
     def test_access_to_login(self):
@@ -48,46 +48,30 @@ class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
         self.assertNotEqual(response.status_code, 403)
 
     def test_logout_user_logged_in(self):
-        user = UserModel.objects.create_superuser(username='admin')
-        user.set_password('password')
-        user.save()
-
-        self.client.force_login(user=user)
+        self.client.force_login(user=self.admin_user)
         url = reverse('api_admin:logout')
         response = self.client.post(url)
         self.assertEqual(response.status_code, 200)
         self.assertIsNotNone(response.data.get('message', None))
 
     def test_logout_user_not_logged_in(self):
-        user = UserModel.objects.create_superuser(username='admin')
-        user.set_password('password')
-        user.save()
-
-        self.client.force_login(user=user)
+        self.client.force_login(user=self.admin_user)
         url = reverse('api_admin:logout')
         response = self.client.post(url)
         self.assertEqual(response.status_code, 200)
         # self.assertIsNotNone(response.get('message', None))
 
     def test_password_change(self):
-        user = UserModel.objects.create_superuser(username='test')
-        user.set_password('password')
-        user.save()
-
         url = reverse('api_admin:password_change')
-        self.client.force_login(user=user)
+        self.client.force_login(user=self.admin_user)
         response = self.client.post(url, {'old_password': 'password', 'new_password1': 'new_password',
                                           'new_password2': 'new_password'})
         self.assertEqual(response.status_code, 200)
         self.assertIsNotNone(response.data.get('message', None))
 
     def test_password_change_password_mismatch(self):
-        user = UserModel.objects.create_superuser(username='test')
-        user.set_password('password')
-        user.save()
-
         url = reverse('api_admin:password_change')
-        self.client.force_login(user=user)
+        self.client.force_login(user=self.admin_user)
         response = self.client.post(url, {'old_password': 'password', 'new_password1': 'something',
                                           'new_password2': 'something else'})
         self.assertEqual(response.status_code, 400)
@@ -115,6 +99,23 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
 
         # authenticate the superuser
         self.client.force_login(self.user)
+
+    def test_registering_models(self):
+        from django.db import models
+
+        # dynamically some create models and modelAdmins
+        student_model = type("Student", (models.Model,), {'__module__': __name__})
+        teacher_model = type("Teacher", (models.Model,), {'__module__': __name__})
+        teacher_model_admin = type("TeacherModelAdmin", (APIModelAdmin,), {'__module__': __name__})
+
+        # register the models using the site
+        site.register(student_model)
+        site.register(teacher_model, teacher_model_admin)
+
+        # test that the models and modelAdmins are in site._registry
+        self.assertIn(student_model, site._registry)
+        self.assertIn(teacher_model, site._registry)
+        self.assertTrue(isinstance(site._registry[teacher_model], APIModelAdmin))
 
     def test_app_list_serializable(self):
         # force superuser authentication
@@ -210,3 +211,92 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
                     break
             if not key_found:
                 raise AssertionError('Site didn`t return api-root view')
+
+    def test_each_context_view(self):
+        url = reverse('api_admin:site_context')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['site_title'], 'Django site admin')
+
+
+class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
+    urlpatterns = [
+        path('api_admin/', site.urls),
+    ]
+
+    def setUp(self) -> None:
+        self.factory = APIRequestFactory()
+
+        # create a superuser
+        self.user = UserModel.objects.create_superuser(username='admin')
+        self.user.set_password('password')
+        self.user.save()
+
+        # authenticate the superuser
+        self.client.force_login(user=self.user)
+
+        # create some valid authors
+        Author.objects.create(name="muhammad", age=20, is_vip=True)
+        Author.objects.create(name="Ali", age=20, is_vip=False)
+        Author.objects.create(name="Omar", age=60, is_vip=True)
+        self.author_info = (Author._meta.app_label, Author._meta.model_name)
+
+    def test_changelist_view_returns_valid_object(self):
+        # test that changelist view works
+        url = reverse('api_admin:%s_%s_changelist' % self.author_info)
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotEqual(response.data['rows'], [])
+        self.assertEqual(response.data['columns'], [{'name': 'name'}, {'is_old_enough': 'is this author old enough'}])
+
+        # test filtering works
+        url = reverse('api_admin:%s_%s_changelist' % self.author_info) + '?is_vip__exact=1&age__exact=60'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(len(response.data['rows']), 1)
+
+        # test pagination works
+        url = reverse('api_admin:%s_%s_changelist' % self.author_info) + '?p=1'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data['rows']), 2)
+
+        # test wrong filters
+        url = reverse('api_admin:%s_%s_changelist' % self.author_info) + '?wrong__exact=0'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_performing_actions(self):
+        action_dict = {
+            'action': 'delete_selected',
+            'selected_ids': [
+                1,
+                2
+            ],
+            'select_across': False,
+        }
+        self.author_info = (Author._meta.app_label, Author._meta.model_name)
+        url = reverse('api_admin:%s_%s_perform_action' % self.author_info)
+        response = self.client.post(url, data=action_dict)
+        self.assertEqual(response.status_code, 200)
+
+    def test_performing_actions_with_select_across(self):
+        action_dict = {
+            'action': 'delete_selected',
+            'selected_ids': [],
+            'select_across': True
+        }
+        url = reverse('api_admin:%s_%s_perform_action' % self.author_info)
+        response = self.client.post(url, data=action_dict)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Author.objects.all().exists(), False)
+
+    def test_performing_actions_invalid_request(self):
+        action_dict = {
+            'action': 'some_weird_action',
+            'select_across': 5.0,
+        }
+        url = reverse('api_admin:%s_%s_perform_action' % self.author_info)
+        response = self.client.post(url, data=action_dict)
+        self.assertEqual(response.status_code, 400)

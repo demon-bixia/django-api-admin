@@ -132,3 +132,8 @@ dmypy.json
 /.idea/misc.xml
 /.idea/inspectionProfiles/profiles_settings.xml
 /.idea/vcs.xml
+/.idea/
+
+thinking.txt
+Todo.txt
+.gitignore

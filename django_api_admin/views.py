@@ -1,13 +1,18 @@
+from django.contrib.admin.options import IncorrectLookupParameters
+from django.contrib.admin.utils import label_for_field, lookup_field
 from django.contrib.admin.views.autocomplete import AutocompleteJsonView
 from django.contrib.auth import login, logout
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import gettext_lazy as _
 from django.views.i18n import JSONCatalog
 from rest_framework import status
+from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.views import APIView
 
 
+# admin-site-wide views
 class LoginView(APIView):
     """
     Allow users to login using username and password
@@ -82,9 +87,6 @@ class IndexView(APIView):
 
         data = {
             'app_list': app_list,
-            'context': {
-                **admin_site.each_context(request),
-            },
         }
 
         request.current_app = admin_site.name
@@ -103,16 +105,14 @@ class AppIndexView(APIView):
         app_dict = admin_site._build_app_dict(request, app_label)
 
         if not app_dict:
-            return Response({'message': 'The requested admin page does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'message': _('The requested admin page does not exist.')},
+                            status=status.HTTP_404_NOT_FOUND)
 
         # Sort the models alphabetically within each app.
         app_dict['models'].sort(key=lambda x: x['name'])
         data = {
             'app_label': app_label,
             'app': app_dict,
-            'context': {
-                **admin_site.each_context(request),
-            },
         }
 
         return Response(data, status=status.HTTP_200_OK)
@@ -134,9 +134,20 @@ class AutoCompleteView(APIView):
     """Handle AutocompleteWidget's AJAX requests for data."""
     permission_classes = []
 
-    def get(self, request, admin_site=None):
+    def get(self, request, admin_site):
         response = AutocompleteJsonView.as_view(admin_site=admin_site)(request)
         return Response({'content': response.content}, status=response.status_code)
+
+
+class SiteContextView(APIView):
+    """
+    Returns the Attributes of AdminSite class (e.g site_title, site_header)
+    """
+    permission_classes = []
+
+    def get(self, request, admin_site):
+        context = admin_site.each_context(request)
+        return Response(context, status=status.HTTP_200_OK)
 
 
 class AdminAPIRootView(APIView):
@@ -157,3 +168,115 @@ class AdminAPIRootView(APIView):
             data[url.name] = reverse(namespace + ':' + url.name, request=request, args=args, kwargs=kwargs)
 
         return Response(data or {}, status=status.HTTP_200_OK)
+
+
+# model admin wide views
+class ChangeListView(APIView):
+    """
+    Return a json object representing the django admin changelist table.
+    supports querystring filtering, pagination and search also based on list display.
+    Note: this is different from the list all objects view.
+    example returned json:
+
+    {
+        'columns': [{'name': 'name'}, {'age': 'age'}, {'is_vip': 'is_this_author_a_vip'},],
+        'rows': [
+            {
+                'name': 'muhammad',
+                'age': 20,
+                'vip': false
+            }
+        ],
+        'result_count': 1,
+        'full_result_count: 1
+    }
+    """
+    permission_classes = []
+
+    def get(self, request, model_admin):
+        try:
+            cl = model_admin.get_changelist_instance(request)
+        except IncorrectLookupParameters as e:
+            raise NotFound(str(e))
+        columns = self.get_columns(request, cl)
+        rows = self.get_rows(request, cl)
+        return Response({'columns': columns, 'rows': rows, 'full_result_count': cl.full_result_count,
+                         'result_count': cl.result_count},
+                        status=status.HTTP_200_OK)
+
+    def get_columns(self, request, cl):
+        """
+        return changelist columns or headers.
+        """
+        columns = []
+        for field_name in cl.model_admin.list_display:
+            text, _ = label_for_field(field_name, cl.model, model_admin=cl.model_admin, return_attr=True)
+            columns.append({field_name: text})
+        return columns
+
+    def get_rows(self, request, cl):
+        """
+        return changelist rows actual list of data.
+        """
+        rows = []
+        # generate changelist attributes (e.g result_list, paginator, result_count)
+        cl.get_results(request)
+        empty_value_display = cl.model_admin.get_empty_value_display
+        for result in cl.result_list:
+            row = {}
+            for field_name in cl.model_admin.list_display:
+                try:
+                    _, _, value = lookup_field(field_name, result, cl.model_admin)
+                    result_repr = value
+                except ObjectDoesNotExist:
+                    result_repr = empty_value_display
+                row[field_name] = result_repr
+            rows.append(row)
+        return rows
+
+
+class HandleActionView(APIView):
+    """
+        preform admin actions using json.
+        json object would look like:
+        {
+        action: 'delete_selected',
+        selected_ids: [
+                1,
+                2,
+                3
+            ],
+        select_across: false
+        }
+    """
+    permission_classes = []
+
+    def post(self, request, model_admin):
+
+        serializer_class = model_admin.get_action_serializer(request)
+        serializer = serializer_class(data=request.data)
+
+        # validate the action selected
+        if serializer.is_valid():
+            # preform the action on the selected items
+            action = serializer.validated_data.get('action')
+            select_across = serializer.validated_data.get('select_across')
+            func = model_admin.get_actions(request)[action][0]
+            try:
+                cl = model_admin.get_changelist_instance(request)
+            except IncorrectLookupParameters as e:
+                raise NotFound(str(e))
+            queryset = cl.get_queryset(request)
+
+            # get a list of pks of selected changelist items
+            selected = request.data.get('selected_ids', None)
+            if not selected and not select_across:
+                msg = _("Items must be selected in order to perform "
+                        "actions on them. No items have been changed.")
+                return Response({'detail': msg}, status=status.HTTP_400_BAD_REQUEST)
+            if not select_across:
+                queryset = queryset.filter(pk__in=selected)
+            # actions should always return a Response
+            return func(model_admin, request, queryset)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

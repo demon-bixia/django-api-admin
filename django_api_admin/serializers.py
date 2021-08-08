@@ -5,10 +5,7 @@ from rest_framework import serializers
 UserModel = get_user_model()
 
 
-class InvalidUsage(Exception):
-    pass
-
-
+# noinspection PyAbstractClass
 class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(label='Password', write_only=True, required=True,
                                      style={'input_type': 'password'})
@@ -52,15 +49,6 @@ class LoginSerializer(serializers.Serializer):
     def get_user(self):
         return self.user_cache
 
-    def create(self, validated_data):
-        raise InvalidUsage("LoginSerializer doesn't allow usage of the create method.")
-
-    def update(self, instance, validated_data):
-        raise InvalidUsage("LoginSerializer doesn't allow usage of the update method.")
-
-    def save(self, **kwargs):
-        raise InvalidUsage("LoginSerializer doesn't allow usage of the save method")
-
 
 # if a custom user model was implemented a new user serializer needs to be written
 class UserSerializer(serializers.ModelSerializer):
@@ -70,6 +58,7 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs = {'password': {'write_only': True}}
 
 
+# noinspection PyAbstractClass
 class PasswordChangeSerializer(serializers.Serializer):
     old_password = serializers.CharField(label=_('Old password'), write_only=True, required=True,
                                          style={'input_type': 'password'})
@@ -114,3 +103,12 @@ class PasswordChangeSerializer(serializers.Serializer):
         if commit:
             user.save()
         return user
+
+
+# noinspection PyAbstractClass
+class ActionSerializer(serializers.Serializer):
+    """
+    checks that a valid action is selected
+    """
+    action = serializers.ChoiceField(choices=[("", "---------"), ])
+    select_across = serializers.BooleanField(required=False, default=0)
