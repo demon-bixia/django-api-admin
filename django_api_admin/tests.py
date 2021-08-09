@@ -52,7 +52,7 @@ class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
         url = reverse('api_admin:logout')
         response = self.client.post(url)
         self.assertEqual(response.status_code, 200)
-        self.assertIsNotNone(response.data.get('message', None))
+        self.assertIsNotNone(response.data.get('detail', None))
 
     def test_logout_user_not_logged_in(self):
         self.client.force_login(user=self.admin_user)
@@ -67,7 +67,7 @@ class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
         response = self.client.post(url, {'old_password': 'password', 'new_password1': 'new_password',
                                           'new_password2': 'new_password'})
         self.assertEqual(response.status_code, 200)
-        self.assertIsNotNone(response.data.get('message', None))
+        self.assertIsNotNone(response.data.get('detail', None))
 
     def test_password_change_password_mismatch(self):
         url = reverse('api_admin:password_change')
@@ -300,3 +300,19 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
         url = reverse('api_admin:%s_%s_perform_action' % self.author_info)
         response = self.client.post(url, data=action_dict)
         self.assertEqual(response.status_code, 400)
+
+    def test_delete_view(self):
+        author = Author.objects.create(name="test", age=20, is_vip=True)
+        url = reverse('api_admin:%s_%s_delete' % self.author_info, kwargs={'object_id': author.pk})
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Author.objects.filter(pk=author.pk).exists())
+        self.assertEqual(response.data['detail'], 'The author “test” was deleted successfully.')
+
+    def test_delete_view_bad_to_field(self):
+        author = Author.objects.create(name="test2", age=20, is_vip=True)
+        url = reverse('api_admin:%s_%s_delete' % self.author_info, kwargs={'object_id': author.pk}) + '?_to_field=name'
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 400)
+        self.assertTrue(Author.objects.filter(pk=author.pk).exists())
+        self.assertEqual(response.data['detail'], 'The field name cannot be referenced.')
