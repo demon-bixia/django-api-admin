@@ -1,3 +1,4 @@
+from django.contrib.admin.models import LogEntry
 from django.contrib.auth import get_user_model, authenticate
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -7,6 +8,9 @@ UserModel = get_user_model()
 
 # noinspection PyAbstractClass
 class LoginSerializer(serializers.Serializer):
+    """
+    Validates login credentials.
+    """
     password = serializers.CharField(label='Password', write_only=True, required=True,
                                      style={'input_type': 'password'})
 
@@ -50,16 +54,32 @@ class LoginSerializer(serializers.Serializer):
         return self.user_cache
 
 
-# if a custom user model was implemented a new user serializer needs to be written
 class UserSerializer(serializers.ModelSerializer):
+    """
+    default AUTH_USER_MODEL serializer.
+    """
+
     class Meta:
         model = UserModel
         fields = '__all__'
         extra_kwargs = {'password': {'write_only': True}}
 
 
+class LogEntrySerializer(serializers.ModelSerializer):
+    """
+    default django.contrib.admin.models.LogEntry serializer.
+    """
+
+    class Meta:
+        model = LogEntry
+        fields = '__all__'
+
+
 # noinspection PyAbstractClass
 class PasswordChangeSerializer(serializers.Serializer):
+    """
+    Allow changing password by entering the old_password and a new one.
+    """
     old_password = serializers.CharField(label=_('Old password'), write_only=True, required=True,
                                          style={'input_type': 'password'})
     new_password1 = serializers.CharField(label=_('New Password'), write_only=True, required=True,

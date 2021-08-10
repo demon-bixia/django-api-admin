@@ -11,28 +11,37 @@ from django.utils.text import capfirst
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 
-from django_api_admin import views as api_views
-from django_api_admin.permissions import IsAdminUser
-from django_api_admin.serializers import PasswordChangeSerializer, LoginSerializer, UserSerializer
 from . import actions
+from . import serializers as api_serializers
+from . import views as api_views
 from .options import APIModelAdmin
+from .pagination import AdminResultsListPagination
+from .permissions import IsAdminUser
 
 
 class APIAdminSite(AdminSite):
     """
     Encapsulates an instance of the django admin application.
     """
-    default_admin_class = None
+    # default model admin class
+    admin_class = APIModelAdmin
+
     # optional views
     include_view_on_site_view = False
     include_root_view = True
     include_final_catch_all_view = False
+
     # default permissions
     default_permission_classes = [IsAdminUser, ]
+
     # default serializers
-    login_serializer = LoginSerializer
-    password_change_serializer = PasswordChangeSerializer
-    user_serializer = UserSerializer
+    login_serializer = api_serializers.LoginSerializer
+    password_change_serializer = api_serializers.PasswordChangeSerializer
+    user_serializer = api_serializers.UserSerializer
+    log_entry_serializer = api_serializers.LogEntrySerializer
+
+    # default result pagination style
+    default_pagination_class = AdminResultsListPagination
 
     def __init__(self, *args, **kwargs):
 
@@ -41,11 +50,10 @@ class APIAdminSite(AdminSite):
         # replace default delete selected with a custom delete_selected action
         self._actions = {'delete_selected': actions.delete_selected}
         self._global_actions = self._actions.copy()
-
-        self.default_admin_class = self.default_admin_class or APIModelAdmin
+        self.admin_class = self.admin_class or APIModelAdmin
 
     def register(self, model_or_iterable, admin_class=None, **options):
-        admin_class = admin_class or APIModelAdmin
+        admin_class = admin_class or self.admin_class
 
         if isinstance(model_or_iterable, ModelBase):
             model_or_iterable = [model_or_iterable]
@@ -97,6 +105,7 @@ class APIAdminSite(AdminSite):
             path('autocomplete/', self.api_admin_view(self.autocomplete_view), name='autocomplete'),
             path('jsi18n/', self.api_admin_view(self.i18n_javascript, cacheable=True), name='language_catalog'),
             path('site_context/', self.api_admin_view(self.site_context_view), name='site_context'),
+            path('admin_log/', self.api_admin_view(self.admin_log_view), name='admin_log'),
         ]
 
         # add the app detail view
@@ -259,6 +268,14 @@ class APIAdminSite(AdminSite):
             'permission_classes': self.default_permission_classes,
         }
         return api_views.SiteContextView.as_view(**defaults)(request, admin_site=self)
+
+    def admin_log_view(self, request):
+        defaults = {
+            'permission_classes': self.default_permission_classes,
+            'serializer_class': self.log_entry_serializer,
+            'pagination_class': self.default_pagination_class,
+        }
+        return api_views.AdminLogView.as_view(**defaults)(request)
 
 
 site = APIAdminSite(name='api_admin')

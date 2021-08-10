@@ -281,6 +281,12 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
         response = self.client.post(url, data=action_dict)
         self.assertEqual(response.status_code, 200)
 
+        # test that the deletion of the author object is logged in database
+        url = reverse('api_admin:admin_log')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(len(response.data) > 0)
+
     def test_performing_actions_with_select_across(self):
         action_dict = {
             'action': 'delete_selected',
@@ -308,6 +314,12 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(Author.objects.filter(pk=author.pk).exists())
         self.assertEqual(response.data['detail'], 'The author “test” was deleted successfully.')
+
+        # test that the deletion of the author object is logged in database
+        url = reverse('api_admin:admin_log')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(len(response.data) > 0)
 
     def test_delete_view_bad_to_field(self):
         author = Author.objects.create(name="test2", age=20, is_vip=True)

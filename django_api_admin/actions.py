@@ -16,15 +16,21 @@ def delete_selected(modeladmin, request, queryset):
     default api_admin action deletes the selected objects
     no confirmation page
     """
-    # todo add logging
     deletable_objects, model_count, perms_needed, protected = modeladmin.get_deleted_objects(queryset, request)
 
+    # check the permissions
     if perms_needed:
         objects_name = model_ngettext(queryset)
         msg = _("Cannot delete %(name)s") % {"name": objects_name}
         raise PermissionDenied(detail=msg)
 
+    # log the deletion of all the objects inside the queryset
     n = queryset.count()
+    if n:
+        for obj in queryset:
+            modeladmin.log_deletion(request, obj, str(obj))
+
+    # delete the queryset
     modeladmin.delete_queryset(request, queryset)
     msg = _("Successfully deleted %(count)d %(items)s.") % {
         "count": n, "items": model_ngettext(modeladmin.opts, n)}

@@ -150,6 +150,20 @@ class SiteContextView(APIView):
         return Response(context, status=status.HTTP_200_OK)
 
 
+class AdminLogView(APIView):
+    """
+        Returns a list of actions that were preformed using django admin.
+    """
+    serializer_class = None
+    permission_classes = []
+    pagination_class = None
+
+    def get(self, request):
+        from django.contrib.admin.models import LogEntry
+        serializer = self.serializer_class(LogEntry.objects.all(), many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class AdminAPIRootView(APIView):
     """
     A list of all root urls in django_api_admin
@@ -300,7 +314,7 @@ class DeleteView(APIView):
         # get the object to be deleted.
         obj = model_admin.get_object(request, unquote(object_id), to_field)
         if obj is None:
-            msg = _('%(name)s with ID “%(key)s” doesn’t exist. Perhaps it was deleted?') % {
+            msg = _("%(name)s with ID “%(key)s” doesn't exist. Perhaps it was deleted?") % {
                 'name': opts.verbose_name,
                 'key': unquote(object_id),
             }
@@ -309,6 +323,9 @@ class DeleteView(APIView):
         # check delete object permission
         if not model_admin.has_delete_permission(request, obj):
             raise PermissionDenied
+
+        # log deletion
+        model_admin.log_deletion(request, obj, str(obj))
 
         # delete the object
         model_admin.delete_model(request, obj)
