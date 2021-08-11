@@ -339,6 +339,7 @@ class DeleteView(APIView):
         return self.delete(*args, **kwargs)
 
 
+# todo test pagination
 class HistoryView(APIView):
     """
     History of actions that happened to this object.
@@ -375,3 +376,31 @@ class HistoryView(APIView):
         serializer = self.serializer_class(action_list, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class AddView(APIView):
+    """
+    Add new instances of this model.
+    """
+    serializer_class = None
+    permission_classes = []
+
+    def post(self, request, model_admin):
+        # if the user doesn't have add permission respond with permission denied
+        if not model_admin.has_add_permission(request):
+            raise PermissionDenied
+
+        # validate data and send
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            opts = model_admin.model._meta
+            new_object = serializer.save()
+            # log addition of the new instance
+            model_admin.log_addition(request, new_object, [{'added': {
+                'name': str(new_object._meta.verbose_name),
+                'object': str(new_object),
+            }}])
+            msg = _(f'The {opts.verbose_name} “{str(new_object)}” was added successfully.')
+            return Response({opts.verbose_name: serializer.data, 'detail': msg}, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -13,6 +13,7 @@ class APIModelAdmin(ModelAdmin):
     filtering is also handled by the ui
     Todo make a view for the client to check all permissions of a user
     Todo model admin attributes should be returned using a separate view
+    Todo there should be a list view and a changelist view
     """
     action_serializer = ActionSerializer
 
@@ -22,6 +23,7 @@ class APIModelAdmin(ModelAdmin):
         """
         # get all fields
         fields = flatten_fieldsets(self.get_fieldsets(request, obj))
+        fields.append('pk')
         # add readonly to exclude
         excluded = self.get_exclude(request, obj)
         exclude = list(excluded) if excluded is not None else None
@@ -52,6 +54,7 @@ class APIModelAdmin(ModelAdmin):
             path('', admin_view(self.changelist_view), name='%s_%s_changelist' % info),
             path('perform_action/', admin_view(self.handle_action_view),
                  name='%s_%s_perform_action' % info),
+            path('add/', admin_view(self.add_view), name='%s_%s_add' % info),
             path('<path:object_id>/delete/', admin_view(self.delete_view), name='%s_%s_delete' % info),
             path('<path:object_id>/history/', admin_view(self.history_view), name='%s_%s_history' % info),
         ]
@@ -82,3 +85,11 @@ class APIModelAdmin(ModelAdmin):
             'pagination_class': self.admin_site.default_pagination_class,
         }
         return api_views.HistoryView.as_view(**defaults)(request, object_id, self)
+
+    def add_view(self, request, **kwargs):
+        defaults = {
+            'serializer_class': self.get_serializer_class(request),
+            'permission_classes': self.admin_site.default_permission_classes,
+        }
+        with transaction.atomic(using=router.db_for_write(self.model)):
+            return api_views.AddView.as_view(**defaults)(request, self)

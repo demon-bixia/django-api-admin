@@ -92,7 +92,6 @@ class APIAdminSite(AdminSite):
 
         return update_wrapper(inner, view)
 
-    # todo refactor to add all model_admin urls
     def get_urls(self):
         from django.urls import path, re_path, include, URLPattern
         from django.contrib.contenttypes import views as contenttype_views
@@ -144,7 +143,7 @@ class APIAdminSite(AdminSite):
     def urls(self):
         return self.get_urls(), self.name, self.name
 
-    # todo remove admin namespace
+    # todo understand this method more
     def _build_app_dict(self, request, label=None):
         """
         Build the app dictionary. The optional `label` parameter filters models
