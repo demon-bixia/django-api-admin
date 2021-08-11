@@ -26,7 +26,8 @@ class LoginSerializer(serializers.Serializer):
         # add the custom error messages to self.error_messages
         self.error_messages.update({
             'invalid_login': _(
-                "Please enter the correct %(username)s and password for a staff account. Note that both fields may be case-sensitive. "
+                "Please enter the correct %(username)s and password for a staff account."
+                " Note that both fields may be case-sensitive. "
             ) % {'username': UserModel.USERNAME_FIELD},
 
             'permission_denied': _("Please login with an account that has permissions to access the admin site"),

@@ -328,3 +328,7 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertTrue(Author.objects.filter(pk=author.pk).exists())
         self.assertEqual(response.data['detail'], 'The field name cannot be referenced.')
+
+    # todo test after the creation of the add/change view
+    def test_history_view(self):
+        pass

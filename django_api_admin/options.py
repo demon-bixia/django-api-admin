@@ -2,6 +2,7 @@ from django.contrib.admin import ModelAdmin
 from django.contrib.admin.utils import flatten_fieldsets
 from django.db import transaction, router
 from rest_framework.serializers import ModelSerializer
+
 from django_api_admin.serializers import ActionSerializer
 from . import views as api_views
 
@@ -49,9 +50,10 @@ class APIModelAdmin(ModelAdmin):
 
         return [
             path('', admin_view(self.changelist_view), name='%s_%s_changelist' % info),
-            path('<path:object_id>/delete/', admin_view(self.delete_view), name='%s_%s_delete' % info),
             path('perform_action/', admin_view(self.handle_action_view),
                  name='%s_%s_perform_action' % info),
+            path('<path:object_id>/delete/', admin_view(self.delete_view), name='%s_%s_delete' % info),
+            path('<path:object_id>/history/', admin_view(self.history_view), name='%s_%s_history' % info),
         ]
 
     def changelist_view(self, request, extra_context=None):
@@ -70,6 +72,13 @@ class APIModelAdmin(ModelAdmin):
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes
         }
-
         with transaction.atomic(using=router.db_for_write(self.model)):
             return api_views.DeleteView.as_view(**defaults)(request, object_id, self)
+
+    def history_view(self, request, object_id, extra_context=None):
+        defaults = {
+            'permission_classes': self.admin_site.default_permission_classes,
+            'serializer_class': self.admin_site.log_entry_serializer,
+            'pagination_class': self.admin_site.default_pagination_class,
+        }
+        return api_views.HistoryView.as_view(**defaults)(request, object_id, self)
