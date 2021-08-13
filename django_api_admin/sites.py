@@ -212,6 +212,10 @@ class APIAdminSite(AdminSite):
             return app_dict.get(label)
         return app_dict
 
+    def paginate_queryset(self, queryset, request, view=None):
+        paginator = self.default_pagination_class()
+        return paginator.paginate_queryset(queryset, request, view=view)
+
     # admin site wide views
     def index(self, request, extra_context=None):
         defaults = {
@@ -272,9 +276,8 @@ class APIAdminSite(AdminSite):
         defaults = {
             'permission_classes': self.default_permission_classes,
             'serializer_class': self.log_entry_serializer,
-            'pagination_class': self.default_pagination_class,
         }
-        return api_views.AdminLogView.as_view(**defaults)(request)
+        return api_views.AdminLogView.as_view(**defaults)(request, self)
 
 
 site = APIAdminSite(name='api_admin')

@@ -358,3 +358,38 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['author']['name'], 'muhammad')
+
+        url = reverse('api_admin:%s_%s_history' % self.author_info,
+                      kwargs={'object_id': author.id}) + '?p=1&page_size=1'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(len(response.data) == 1)
+
+    def test_pagination_class(self):
+        # perform some actions then paginate them
+        authors = [
+            {
+                'name': 'test1',
+                'age': '60',
+                'is_vip': True
+            },
+            {
+                'name': 'test2',
+                'age': '60',
+                'is_vip': True
+            },
+            {
+                'name': 'test3',
+                'age': '60',
+                'is_vip': True
+            },
+        ]
+        for author in authors:
+            url = reverse('api_admin:%s_%s_add' % self.author_info)
+            self.client.post(url, data=author)
+
+        url = reverse('api_admin:admin_log') + '?page_size=1&p=1'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)

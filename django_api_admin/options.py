@@ -83,7 +83,6 @@ class APIModelAdmin(ModelAdmin):
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes,
             'serializer_class': self.admin_site.log_entry_serializer,
-            'pagination_class': self.admin_site.default_pagination_class,
         }
         return api_views.HistoryView.as_view(**defaults)(request, object_id, self)
 

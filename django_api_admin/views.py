@@ -158,11 +158,11 @@ class AdminLogView(APIView):
     """
     serializer_class = None
     permission_classes = []
-    pagination_class = None
 
-    def get(self, request):
+    def get(self, request, admin_site):
         from django.contrib.admin.models import LogEntry
-        serializer = self.serializer_class(LogEntry.objects.all(), many=True)
+        page = admin_site.paginate_queryset(LogEntry.objects.all(), request, view=self)
+        serializer = self.serializer_class(page, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -341,14 +341,12 @@ class DeleteView(APIView):
         return self.delete(*args, **kwargs)
 
 
-# todo test pagination
 class HistoryView(APIView):
     """
     History of actions that happened to this object.
     """
     permission_classes = []
     serializer_class = None
-    pagination_class = None
 
     def get(self, request, object_id, model_admin):
         from django.contrib.admin.models import LogEntry
@@ -374,8 +372,11 @@ class HistoryView(APIView):
             content_type=get_content_type_for_model(model)
         ).select_related().order_by('action_time')
 
+        # paginate the action_list
+        page = model_admin.admin_site.paginate_queryset(action_list, request, view=self)
+
         # serialize the LogEntry queryset
-        serializer = self.serializer_class(action_list, many=True)
+        serializer = self.serializer_class(page, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
