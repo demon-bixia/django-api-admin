@@ -345,3 +345,16 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertTrue(len(response.data) > 0)
+
+    def test_change_view(self):
+        author = Author.objects.create(name='hassan', age=60, is_vip=False)
+        url = reverse('api_admin:%s_%s_change' % self.author_info, kwargs={'object_id': author.pk})
+        data = {
+            'name': 'muhammad',
+            'age': '60',
+            'is_vip': True
+        }
+        response = self.client.patch(url, data=data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['author']['name'], 'muhammad')

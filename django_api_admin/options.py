@@ -57,6 +57,7 @@ class APIModelAdmin(ModelAdmin):
             path('add/', admin_view(self.add_view), name='%s_%s_add' % info),
             path('<path:object_id>/delete/', admin_view(self.delete_view), name='%s_%s_delete' % info),
             path('<path:object_id>/history/', admin_view(self.history_view), name='%s_%s_history' % info),
+            path('<path:object_id>/change/', admin_view(self.change_view), name='%s_%s_change' % info),
         ]
 
     def changelist_view(self, request, extra_context=None):
@@ -65,7 +66,7 @@ class APIModelAdmin(ModelAdmin):
         }
         return api_views.ChangeListView.as_view(**defaults)(request, self)
 
-    def handle_action_view(self, request, extra_context=None):
+    def handle_action_view(self, request):
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes
         }
@@ -93,3 +94,11 @@ class APIModelAdmin(ModelAdmin):
         }
         with transaction.atomic(using=router.db_for_write(self.model)):
             return api_views.AddView.as_view(**defaults)(request, self)
+
+    def change_view(self, request, object_id, **kwargs):
+        defaults = {
+            'serializer_class': self.get_serializer_class(request),
+            'permission_classes': self.admin_site.default_permission_classes,
+        }
+        with transaction.atomic(using=router.db_for_write(self.model)):
+            return api_views.ChangeView.as_view(**defaults)(request, object_id, self)

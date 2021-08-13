@@ -11,6 +11,8 @@ from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.views import APIView
 
+from .utils import ModelDiffHelper
+
 
 # admin-site-wide views
 class LoginView(APIView):
@@ -404,3 +406,62 @@ class AddView(APIView):
             return Response({opts.verbose_name: serializer.data, 'detail': msg}, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ChangeView(APIView):
+    """
+    Change an existing instance of this model.
+    """
+    serializer_class = None
+    permission_classes = []
+
+    def get_serializer_instance(self, request, obj):
+        if request.method == 'PATCH':
+            return self.serializer_class(instance=obj, data=request.data, partial=True)
+        return self.serializer_class(instance=obj, data=request.data)
+
+    def update(self, request, object_id, model_admin):
+        # validate the reverse to field reference
+        to_field = request.query_params.get(TO_FIELD_VAR)
+        if to_field and not model_admin.to_field_allowed(request, to_field):
+            return Response({'detail': 'The field %s cannot be referenced.' % to_field},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        obj = model_admin.get_object(request, unquote(object_id), to_field)
+        opts = model_admin.model._meta
+        helper = ModelDiffHelper(obj)
+
+        # if the object doesn't exist respond with not found
+        if obj is None:
+            msg = _("%(name)s with ID “%(key)s” doesn't exist. Perhaps it was deleted?") % {
+                'name': model_admin.model._meta.verbose_name,
+                'key': unquote(object_id),
+            }
+            return Response({'detail': msg}, status=status.HTTP_404_NOT_FOUND)
+
+        # test user change permission in this model.
+        if not model_admin.has_change_permission(request, obj):
+            raise PermissionDenied
+
+        # initiate the serializer based on the request method
+        serializer = self.get_serializer_instance(request, obj)
+
+        # update and log the changes to the object
+        if serializer.is_valid():
+            updated_object = serializer.save()
+            # log the change of  change
+            model_admin.log_change(request, updated_object, [{'changed': {
+                'name': str(updated_object._meta.verbose_name),
+                'object': str(updated_object),
+                'fields': helper.set_changed_model(updated_object).changed_fields
+            }}])
+            msg = _(f'The {opts.verbose_name} “{str(updated_object)}” was changed successfully.')
+            return Response({opts.verbose_name: serializer.data, 'detail': msg})
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, object_id, model_admin):
+        return self.update(request, object_id, model_admin)
+
+    def patch(self, request, object_id, model_admin):
+        return self.update(request, object_id, model_admin)
