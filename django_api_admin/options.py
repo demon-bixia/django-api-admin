@@ -86,7 +86,7 @@ class APIModelAdmin(ModelAdmin):
             path('perform_action/', admin_view(self.handle_action_view), name='%s_%s_perform_action' % info),
             path('add/', admin_view(self.add_view), name='%s_%s_add' % info),
 
-            path('<path:object_id>/', admin_view(self.detail_view), name='%s_%s_detail' % info),
+            path('<path:object_id>/detail/', admin_view(self.detail_view), name='%s_%s_detail' % info),
             path('<path:object_id>/delete/', admin_view(self.delete_view), name='%s_%s_delete' % info),
             path('<path:object_id>/history/', admin_view(self.history_view), name='%s_%s_history' % info),
             path('<path:object_id>/change/', admin_view(self.change_view), name='%s_%s_change' % info),
