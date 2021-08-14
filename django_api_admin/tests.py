@@ -267,6 +267,12 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
 
+    def test_list_view(self):
+        url = reverse('api_admin:%s_%s_list' % self.author_info)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data[0]['name'], 'muhammad')
+
     def test_performing_actions(self):
         action_dict = {
             'action': 'delete_selected',

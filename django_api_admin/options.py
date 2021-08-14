@@ -14,6 +14,7 @@ class APIModelAdmin(ModelAdmin):
     Todo make a view for the client to check all permissions of a user
     Todo model admin attributes should be returned using a separate view
     Todo there should be a list view and a changelist view
+    Todo there should be a detail view.
     """
     action_serializer = ActionSerializer
 
@@ -51,7 +52,8 @@ class APIModelAdmin(ModelAdmin):
         admin_view = self.admin_site.api_admin_view
 
         return [
-            path('', admin_view(self.changelist_view), name='%s_%s_changelist' % info),
+            path('', admin_view(self.list_view), name='%s_%s_list' % info),
+            path('changelist/', admin_view(self.changelist_view), name='%s_%s_changelist' % info),
             path('perform_action/', admin_view(self.handle_action_view),
                  name='%s_%s_perform_action' % info),
             path('add/', admin_view(self.add_view), name='%s_%s_add' % info),
@@ -60,31 +62,17 @@ class APIModelAdmin(ModelAdmin):
             path('<path:object_id>/change/', admin_view(self.change_view), name='%s_%s_change' % info),
         ]
 
-    def changelist_view(self, request, extra_context=None):
+    def changelist_view(self, request, **kwargs):
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes
         }
         return api_views.ChangeListView.as_view(**defaults)(request, self)
 
-    def handle_action_view(self, request):
+    def list_view(self, request, **kwargs):
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes
         }
-        return api_views.HandleActionView.as_view(**defaults)(request, self)
-
-    def delete_view(self, request, object_id, extra_context=None):
-        defaults = {
-            'permission_classes': self.admin_site.default_permission_classes
-        }
-        with transaction.atomic(using=router.db_for_write(self.model)):
-            return api_views.DeleteView.as_view(**defaults)(request, object_id, self)
-
-    def history_view(self, request, object_id, extra_context=None):
-        defaults = {
-            'permission_classes': self.admin_site.default_permission_classes,
-            'serializer_class': self.admin_site.log_entry_serializer,
-        }
-        return api_views.HistoryView.as_view(**defaults)(request, object_id, self)
+        return api_views.ListView.as_view(**defaults)(request, self)
 
     def add_view(self, request, **kwargs):
         defaults = {
@@ -101,3 +89,23 @@ class APIModelAdmin(ModelAdmin):
         }
         with transaction.atomic(using=router.db_for_write(self.model)):
             return api_views.ChangeView.as_view(**defaults)(request, object_id, self)
+
+    def delete_view(self, request, object_id, **kwargs):
+        defaults = {
+            'permission_classes': self.admin_site.default_permission_classes
+        }
+        with transaction.atomic(using=router.db_for_write(self.model)):
+            return api_views.DeleteView.as_view(**defaults)(request, object_id, self)
+
+    def handle_action_view(self, request):
+        defaults = {
+            'permission_classes': self.admin_site.default_permission_classes
+        }
+        return api_views.HandleActionView.as_view(**defaults)(request, self)
+
+    def history_view(self, request, object_id, **kwargs):
+        defaults = {
+            'permission_classes': self.admin_site.default_permission_classes,
+            'serializer_class': self.admin_site.log_entry_serializer,
+        }
+        return api_views.HistoryView.as_view(**defaults)(request, object_id, self)
