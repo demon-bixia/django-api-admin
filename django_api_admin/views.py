@@ -256,11 +256,41 @@ class ListView(APIView):
     Return a list containing all instances of this model.
     """
 
+    serializer_class = None
+    permission_classes = []
+
     def get(self, request, model_admin):
         queryset = model_admin.model.objects.all()
         page = model_admin.admin_site.paginate_queryset(queryset, request, view=self)
-        serializer_class = model_admin.get_serializer_class(request)
-        serializer = serializer_class(page, many=True)
+        serializer = self.serializer_class(page, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class DetailView(APIView):
+    """
+    GET one instance of this model using pk and to_fields.
+    """
+    permission_classes = []
+    serializer_class = None
+
+    def get(self, request, object_id, model_admin):
+        # validate the reverse to field reference
+        to_field = request.query_params.get(TO_FIELD_VAR)
+        if to_field and not model_admin.to_field_allowed(request, to_field):
+            return Response({'detail': 'The field %s cannot be referenced.' % to_field},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        obj = model_admin.get_object(request, unquote(object_id), to_field)
+
+        # if the object doesn't exist respond with not found
+        if obj is None:
+            msg = _("%(name)s with ID “%(key)s” doesn't exist. Perhaps it was deleted?") % {
+                'name': model_admin.model._meta.verbose_name,
+                'key': unquote(object_id),
+            }
+            return Response({'detail': msg}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.serializer_class(obj)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 

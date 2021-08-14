@@ -13,7 +13,6 @@ class APIModelAdmin(ModelAdmin):
     filtering is also handled by the ui
     Todo make a view for the client to check all permissions of a user
     Todo model admin attributes should be returned using a separate view
-    Todo there should be a list view and a changelist view
     Todo there should be a detail view.
     """
     action_serializer = ActionSerializer
@@ -53,6 +52,7 @@ class APIModelAdmin(ModelAdmin):
 
         return [
             path('', admin_view(self.list_view), name='%s_%s_list' % info),
+            path('<path:object_id>/', admin_view(self.detail_view), name='%s_%s_detail' % info),
             path('changelist/', admin_view(self.changelist_view), name='%s_%s_changelist' % info),
             path('perform_action/', admin_view(self.handle_action_view),
                  name='%s_%s_perform_action' % info),
@@ -66,13 +66,21 @@ class APIModelAdmin(ModelAdmin):
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes
         }
-        return api_views.ChangeListView.as_view(**defaults)(request, self)
+        return api_views.ChangeListView.as_view(**defaults)(request, self, **kwargs)
 
     def list_view(self, request, **kwargs):
         defaults = {
-            'permission_classes': self.admin_site.default_permission_classes
+            'serializer_class': self.get_serializer_class(request),
+            'permission_classes': self.admin_site.default_permission_classes,
         }
-        return api_views.ListView.as_view(**defaults)(request, self)
+        return api_views.ListView.as_view(**defaults)(request, self, **kwargs)
+
+    def detail_view(self, request, object_id, **kwargs):
+        defaults = {
+            'serializer_class': self.get_serializer_class(request),
+            'permission_classes': self.admin_site.default_permission_classes,
+        }
+        return api_views.DetailView.as_view(**defaults)(request, object_id, self, **kwargs)
 
     def add_view(self, request, **kwargs):
         defaults = {
@@ -80,7 +88,7 @@ class APIModelAdmin(ModelAdmin):
             'permission_classes': self.admin_site.default_permission_classes,
         }
         with transaction.atomic(using=router.db_for_write(self.model)):
-            return api_views.AddView.as_view(**defaults)(request, self)
+            return api_views.AddView.as_view(**defaults)(request, self, **kwargs)
 
     def change_view(self, request, object_id, **kwargs):
         defaults = {
@@ -88,24 +96,24 @@ class APIModelAdmin(ModelAdmin):
             'permission_classes': self.admin_site.default_permission_classes,
         }
         with transaction.atomic(using=router.db_for_write(self.model)):
-            return api_views.ChangeView.as_view(**defaults)(request, object_id, self)
+            return api_views.ChangeView.as_view(**defaults)(request, object_id, self, **kwargs)
 
     def delete_view(self, request, object_id, **kwargs):
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes
         }
         with transaction.atomic(using=router.db_for_write(self.model)):
-            return api_views.DeleteView.as_view(**defaults)(request, object_id, self)
+            return api_views.DeleteView.as_view(**defaults)(request, object_id, self, **kwargs)
 
-    def handle_action_view(self, request):
+    def handle_action_view(self, request, **kwargs):
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes
         }
-        return api_views.HandleActionView.as_view(**defaults)(request, self)
+        return api_views.HandleActionView.as_view(**defaults)(request, self, **kwargs)
 
     def history_view(self, request, object_id, **kwargs):
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes,
             'serializer_class': self.admin_site.log_entry_serializer,
         }
-        return api_views.HistoryView.as_view(**defaults)(request, object_id, self)
+        return api_views.HistoryView.as_view(**defaults)(request, object_id, self, **kwargs)
