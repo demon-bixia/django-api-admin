@@ -11,8 +11,6 @@ class APIModelAdmin(ModelAdmin):
     """
     everything that is ui specific is handled by the ui
     filtering is also handled by the ui
-    Todo make a view for the client to check all permissions of a user
-    Todo model admin attributes should be returned using a separate view
     """
     action_serializer = ActionSerializer
 

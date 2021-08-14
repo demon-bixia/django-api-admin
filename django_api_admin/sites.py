@@ -143,7 +143,6 @@ class APIAdminSite(AdminSite):
     def urls(self):
         return self.get_urls(), self.name, self.name
 
-    # todo refactor this method
     def _build_app_dict(self, request, label=None):
         """
         Build the app dictionary. The optional `label` parameter filters models
@@ -173,7 +172,7 @@ class APIAdminSite(AdminSite):
             if True not in perms.values():
                 continue
 
-            info = (app_label, model._meta.model_name)
+            info = (self.name, app_label, model._meta.model_name)
             model_dict = {
                 'name': capfirst(model._meta.verbose_name_plural),
                 'object_name': model._meta.object_name,
@@ -184,12 +183,12 @@ class APIAdminSite(AdminSite):
             if perms.get('change') or perms.get('view'):
                 model_dict['view_only'] = not perms.get('change')
                 try:
-                    model_dict['admin_url'] = reverse('api_admin:%s_%s_changelist' % info, current_app=self.name)
+                    model_dict['admin_url'] = reverse('%s:%s_%s_changelist' % info, current_app=self.name)
                 except NoReverseMatch:
                     pass
             if perms.get('add'):
                 try:
-                    model_dict['add_url'] = reverse('admin:%s_%s_add' % info, current_app=self.name)
+                    model_dict['add_url'] = reverse('%s:%s_%s_add' % info, current_app=self.name)
                 except NoReverseMatch:
                     pass
 
