@@ -78,7 +78,7 @@ class APIModelAdmin(ModelAdmin):
         admin_view = self.admin_site.api_admin_view
 
         return [
-            path('', admin_view(self.list_view), name='%s_%s_list' % info),
+            path('list/', admin_view(self.list_view), name='%s_%s_list' % info),
             path('changelist/', admin_view(self.changelist_view), name='%s_%s_changelist' % info),
             path('context/', admin_view(self.admin_context_view), name='%s_%s_context' % info),
             path('perform_action/', admin_view(self.handle_action_view), name='%s_%s_perform_action' % info),
@@ -94,7 +94,6 @@ class APIModelAdmin(ModelAdmin):
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes
         }
-
         return api_views.AdminContextView.as_view(**defaults)(request, self)
 
     def changelist_view(self, request, **kwargs):

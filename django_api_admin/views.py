@@ -112,6 +112,7 @@ class AppIndexView(APIView):
 
         # Sort the models alphabetically within each app.
         app_dict['models'].sort(key=lambda x: x['name'])
+
         data = {
             'app_label': app_label,
             'app': app_dict,
@@ -120,6 +121,7 @@ class AppIndexView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
+# todo test translation
 class LanguageCatalogView(APIView):
     """
       Returns json object with django.contrib.admin i18n translation catalog
@@ -275,7 +277,17 @@ class ListView(APIView):
         queryset = model_admin.model.objects.all()
         page = model_admin.admin_site.paginate_queryset(queryset, request, view=self)
         serializer = self.serializer_class(page, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        data = serializer.data
+
+        info = (
+            model_admin.admin_site.name,
+            model_admin.model._meta.app_label,
+            model_admin.model._meta.model_name
+        )
+        for item in data:
+            item['detail_url'] = reverse('%s:%s_%s_detail' % info, kwargs={'object_id': int(item['pk'])},
+                                         request=request)
+        return Response(data, status=status.HTTP_200_OK)
 
 
 class DetailView(APIView):
@@ -303,7 +315,17 @@ class DetailView(APIView):
             return Response({'detail': msg}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = self.serializer_class(obj)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        data = serializer.data
+
+        info = (
+            model_admin.admin_site.name,
+            model_admin.model._meta.app_label,
+            model_admin.model._meta.model_name
+        )
+        data['delete_url'] = reverse('%s:%s_%s_delete' % info, kwargs={'object_id': data['pk']}, request=request)
+        data['change_url'] = reverse('%s:%s_%s_change' % info, kwargs={'object_id': data['pk']}, request=request)
+        data['history_url'] = reverse('%s:%s_%s_history' % info, kwargs={'object_id': data['pk']}, request=request)
+        return Response(data, status=status.HTTP_200_OK)
 
 
 class AddView(APIView):

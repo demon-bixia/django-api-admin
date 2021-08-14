@@ -177,18 +177,31 @@ class APIAdminSite(AdminSite):
                 'name': capfirst(model._meta.verbose_name_plural),
                 'object_name': model._meta.object_name,
                 'perms': perms,
-                'admin_url': None,
+                'list_url': None,
+                'changelist_url': None,
                 'add_url': None,
+                'admin_context': None,
+                'perform_action_url': None,
             }
+
             if perms.get('change') or perms.get('view'):
                 model_dict['view_only'] = not perms.get('change')
                 try:
-                    model_dict['admin_url'] = reverse('%s:%s_%s_changelist' % info, current_app=self.name)
+                    model_dict['list_url'] = request.build_absolute_uri(
+                        reverse('%s:%s_%s_list' % info, current_app=self.name))
+                    model_dict['admin_context'] = request.build_absolute_uri(
+                        reverse('%s:%s_%s_context' % info, current_app=self.name))
+                    model_dict['changelist_url'] = request.build_absolute_uri(
+                        reverse('%s:%s_%s_changelist' % info, current_app=self.name))
+                    model_dict['perform_action_url'] = request.build_absolute_uri(
+                        reverse('%s:%s_%s_perform_action' % info, current_app=self.name))
                 except NoReverseMatch:
                     pass
+
             if perms.get('add'):
                 try:
-                    model_dict['add_url'] = reverse('%s:%s_%s_add' % info, current_app=self.name)
+                    model_dict['add_url'] = request.build_absolute_uri(
+                        reverse('%s:%s_%s_add' % info, current_app=self.name))
                 except NoReverseMatch:
                     pass
 
