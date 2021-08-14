@@ -86,10 +86,8 @@ class APIAdminSite(AdminSite):
 
         if not cacheable:
             inner = never_cache(inner)
-
         if not getattr(inner, 'csrf_exempt', False):
             inner = csrf_protect(inner)
-
         return update_wrapper(inner, view)
 
     def get_urls(self):
@@ -126,6 +124,7 @@ class APIAdminSite(AdminSite):
                 name='view_on_site',
             ))
 
+        # add api_root for browsable api.
         if self.include_root_view:
             # remove detail, redirect urls and urls with no names
             excluded_url_names = ['app_list', 'view_on_site']
@@ -134,6 +133,7 @@ class APIAdminSite(AdminSite):
             root_view = api_views.AdminAPIRootView.as_view(root_urls=root_urls)
             urlpatterns.append(path('', root_view, name='api-root'))
 
+        # add redirect to object view
         if self.include_final_catch_all_view:
             urlpatterns.append(re_path(r'(?P<url>.*)$', self.catch_all_view, name='final_catch_all'))
 
@@ -143,7 +143,7 @@ class APIAdminSite(AdminSite):
     def urls(self):
         return self.get_urls(), self.name, self.name
 
-    # todo understand this method more
+    # todo refactor this method
     def _build_app_dict(self, request, label=None):
         """
         Build the app dictionary. The optional `label` parameter filters models

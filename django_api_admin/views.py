@@ -187,6 +187,18 @@ class AdminAPIRootView(APIView):
 
 
 # model admin wide views
+class AdminContextView(APIView):
+    """
+    List of options defined in the model_admin class.
+    """
+    permission_classes = []
+
+    def get(self, request, model_admin):
+        options_dict = model_admin.get_admin_options(request)
+        permission_map = model_admin.get_permission_map(request)
+        return Response({'options': options_dict, 'permission_map': permission_map}, status=status.HTTP_200_OK)
+
+
 class ChangeListView(APIView):
     """
     Return a json object representing the django admin changelist table.

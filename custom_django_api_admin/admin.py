@@ -4,6 +4,7 @@ from django_api_admin.sites import APIAdminSite
 from . import views as custom_api_views
 
 
+# todo add extra view decorator
 class CustomAPIAdminSite(APIAdminSite):
     include_root_view = False
     include_view_on_site_view = False

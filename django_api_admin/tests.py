@@ -241,6 +241,13 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
         Author.objects.create(name="Omar", age=60, is_vip=True)
         self.author_info = (Author._meta.app_label, Author._meta.model_name)
 
+    def test_admin_context_view(self):
+        url = reverse('api_admin:%s_%s_context' % self.author_info)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNotNone(response.data['options'])
+        self.assertIsNotNone(response.data['permission_map'])
+
     def test_changelist_view_returns_valid_object(self):
         # test that changelist view works
         url = reverse('api_admin:%s_%s_changelist' % self.author_info)
