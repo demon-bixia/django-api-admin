@@ -100,7 +100,7 @@ class APIAdminSite(AdminSite):
             path('logout/', self.api_admin_view(self.logout), name='logout'),
             path('password_change/', self.api_admin_view(self.password_change, cacheable=True), name='password_change'),
             path('autocomplete/', self.api_admin_view(self.autocomplete_view), name='autocomplete'),
-            path('jsi18n/', self.api_admin_view(self.i18n_javascript, cacheable=True), name='language_catalog'),
+            path('jsoni18n/', self.api_admin_view(self.i18n_javascript, cacheable=True), name='language_catalog'),
             path('site_context/', self.api_admin_view(self.site_context_view), name='site_context'),
             path('admin_log/', self.api_admin_view(self.admin_log_view), name='admin_log'),
         ]
@@ -127,7 +127,7 @@ class APIAdminSite(AdminSite):
         # add api_root for browsable api.
         if self.include_root_view:
             # remove detail, redirect urls and urls with no names
-            excluded_url_names = ['app_list', 'view_on_site']
+            excluded_url_names = ['app_list', 'view_on_site', 'language_catalog']
             root_urls = [url for url in urlpatterns if
                          isinstance(url, URLPattern) and url.name and url.name not in excluded_url_names]
             root_view = api_views.AdminAPIRootView.as_view(root_urls=root_urls)

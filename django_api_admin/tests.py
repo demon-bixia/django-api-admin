@@ -149,11 +149,13 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_i18n_javascript(self):
+        import json
+
         # test if the i18n_javascript view works
         url = reverse('api_admin:language_catalog')
-        response = self.client.get(url)
+        response = self.client.get(url, Accept_Language="ar")
         self.assertEqual(response.status_code, 200)
-        self.assertIsNotNone(response.data)
+        data = json.loads(response.data)
 
     def test_permission_denied(self):
         # create a non-staff user
