@@ -28,7 +28,9 @@ class LoginView(APIView):
         if serializer.is_valid():
             login(request, serializer.get_user())
             user_serializer = self.user_serializer_class(request.user)
-            return Response({'user': user_serializer.data}, status=status.HTTP_200_OK)
+            msg = _('you are logged in successfully')
+            return Response({'user': user_serializer.data, 'detail': msg},
+                            status=status.HTTP_200_OK)
 
         for error in serializer.errors.get('non_field_errors', []):
             if error.code == 'permission_denied':
@@ -130,8 +132,8 @@ class LanguageCatalogView(APIView):
     permission_classes = []
 
     def get(self, request):
-        response = JSONCatalog.as_view(packages=['django.contrib.admin'])(request)
-        return Response({'context': response.content}, status=response.status_code)
+        response = JSONCatalog.as_view(packages=['django_api_admin'])(request)
+        return Response(response.content, status=response.status_code)
 
 
 class AutoCompleteView(APIView):

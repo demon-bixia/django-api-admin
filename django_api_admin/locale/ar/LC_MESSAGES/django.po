@@ -1,0 +1,114 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-08-15 14:59+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
+"&& n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#: actions.py:12
+#, python-format
+msgid "Delete selected %(verbose_name_plural)s"
+msgstr "احذف %(verbose_name_plural)s المحدّدة"
+
+#: actions.py:24
+#, python-format
+msgid "Cannot delete %(name)s"
+msgstr "تعذّر حذف %(name)s"
+
+#: actions.py:35
+#, python-format
+msgid "Successfully deleted %(count)d %(items)s."
+msgstr "نجح حذف %(count)d من %(items)s."
+
+#: serializers.py:29
+#, python-format
+msgid ""
+"Please enter the correct %(username)s and password for a staff account. Note "
+"that both fields may be case-sensitive. "
+msgstr ""
+"من فضلك أدخِل قيمة %(username)s الصحيحة وكلمة السر لحساب الطاقم الإداري. "
+"الحقلين حسّاسين لحالة الأحرف."
+
+#: serializers.py:33
+msgid ""
+"Please login with an account that has permissions to access the admin site"
+msgstr "الرجاء تسجيل الدخول بحساب لديه صلاحيات استخدام صفحة الادارة"
+
+#: serializers.py:35
+msgid "This account is inactive."
+msgstr "هذا الحساب معطل."
+
+#: serializers.py:84
+msgid "Old password"
+msgstr "كلمة السر القديمة"
+
+#: serializers.py:86
+msgid "New Password"
+msgstr "كلمة المرور القديمة"
+
+#: serializers.py:88
+msgid "New password confirmation"
+msgstr "كلمة المرور الجديدة"
+
+#: serializers.py:95
+msgid "The two password fields didn’t match."
+msgstr "كلمات المرور ليست متطابقة."
+
+#: serializers.py:96
+msgid "Your old password was entered incorrectly. Please enter it again."
+msgstr "كلمة مرور القديمة الخاصة بك ليست صحيحة."
+
+#: views.py:31
+msgid "you are logged in successfully"
+msgstr "لقد قمت بتسجيل الدخول بنجاح"
+
+#: views.py:51
+msgid "You are logged out."
+msgstr "لقد قمت بتسجيل الخروج"
+
+#: views.py:72
+msgid "Your password was changed"
+msgstr "تمّ تغيير كلمة مرورك."
+
+#: views.py:112
+msgid "The requested admin page does not exist."
+msgstr "صفحة الادارة المطلوبة غير موجودة."
+
+#: views.py:313 views.py:386 views.py:438 views.py:525
+#, python-format
+msgid "%(name)s with ID “%(key)s” doesn't exist. Perhaps it was deleted?"
+msgstr "ما من %(name)s له المعرّف ”%(key)s“. لربّما حُذف أساسًا؟"
+
+#: views.py:355
+msgid "The {opts.verbose_name} “{str(new_object)}” was added successfully."
+msgstr "تمت اضافة {opts.verbose_name} “{str(new_object)}” بنجاح."
+
+#: views.py:408
+msgid ""
+"The {opts.verbose_name} “{str(updated_object)}” was changed successfully."
+msgstr "تم تغير {opts.verbose_name} “{str(updated_object)}” بنجاح."
+
+#: views.py:454
+#, python-format
+msgid "The %(name)s “%(obj)s” was deleted successfully."
+msgstr "%(name)s “%(obj)s” نجح حذف"
+
+#: views.py:499
+msgid ""
+"Items must be selected in order to perform actions on them. No items have "
+"been changed."
+msgstr "عليك تحديد العناصر لتطبيق الإجراءات عليها. لم يتغيّر أيّ عنصر."
