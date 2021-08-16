@@ -7,6 +7,7 @@ from django_api_admin.serializers import ActionSerializer
 from . import views as api_views
 
 
+# todo add field types view based on how client creates forms
 class APIModelAdmin(ModelAdmin):
     """
     everything that is ui specific is handled by the ui
@@ -48,20 +49,22 @@ class APIModelAdmin(ModelAdmin):
         """
         Return a serializer class to be used in the model admin views
         """
-        # get all fields
-        fields = flatten_fieldsets(self.get_fieldsets(request, obj))
-        fields.append('pk')
-        # add readonly to exclude
+        # get all fields in fieldsets
+        fieldsets_fields = flatten_fieldsets(self.get_fieldsets(request, obj))
+        fieldsets_fields.append('pk')
+        # get excluded fields
         excluded = self.get_exclude(request, obj)
         exclude = list(excluded) if excluded is not None else None
+        # get read only fields
         readonly_fields = self.get_readonly_fields(request, obj)
+        # subtract excluded fields from fieldsets_fields
+        fields = [field for field in fieldsets_fields if field not in exclude]
 
         # dynamically construct a model serializer
         return type('%sSerializer' % self.model.__name__, (ModelSerializer,), {
             'Meta': type('Meta', (object,), {
                 'model': self.model,
                 'fields': fields,
-                'exclude': exclude,
                 'read_only_fields': readonly_fields,
             }),
         })

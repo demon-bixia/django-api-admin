@@ -3,6 +3,7 @@ from django.contrib.admin.utils import label_for_field, lookup_field, unquote
 from django.contrib.admin.views.autocomplete import AutocompleteJsonView
 from django.contrib.auth import login, logout
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Model
 from django.utils.translation import gettext_lazy as _
 from django.views.i18n import JSONCatalog
 from rest_framework import status
@@ -123,7 +124,6 @@ class AppIndexView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
-# todo test translation
 class LanguageCatalogView(APIView):
     """
       Returns json object with django.contrib.admin i18n translation catalog
@@ -259,7 +259,11 @@ class ChangeListView(APIView):
             for field_name in cl.model_admin.list_display:
                 try:
                     _, _, value = lookup_field(field_name, result, cl.model_admin)
-                    result_repr = value
+                    # if the value is a Model instance get the string representation
+                    if value and isinstance(value, Model):
+                        result_repr = str(value)
+                    else:
+                        result_repr = value
                 except ObjectDoesNotExist:
                     result_repr = empty_value_display
                 row[field_name] = result_repr
@@ -460,6 +464,7 @@ class DeleteView(APIView):
         return self.delete(*args, **kwargs)
 
 
+# todo try to add action form to browsable api
 class HandleActionView(APIView):
     """
         Preform admin actions using json.

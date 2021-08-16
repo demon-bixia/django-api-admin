@@ -29,7 +29,6 @@ class APIAdminSite(AdminSite):
     # optional views
     include_view_on_site_view = False
     include_root_view = True
-    include_final_catch_all_view = False
 
     # default permissions
     default_permission_classes = [IsAdminUser, ]
@@ -133,10 +132,6 @@ class APIAdminSite(AdminSite):
             root_view = api_views.AdminAPIRootView.as_view(root_urls=root_urls)
             urlpatterns.append(path('', root_view, name='api-root'))
 
-        # add redirect to object view
-        if self.include_final_catch_all_view:
-            urlpatterns.append(re_path(r'(?P<url>.*)$', self.catch_all_view, name='final_catch_all'))
-
         return urlpatterns
 
     @property
@@ -226,7 +221,7 @@ class APIAdminSite(AdminSite):
 
     def paginate_queryset(self, queryset, request, view=None):
         paginator = self.default_pagination_class()
-        return paginator.paginate_queryset(queryset, request, view=view)
+        return paginator.paginate_queryset(queryset.order_by('pk'), request, view=view)
 
     # admin site wide views
     def index(self, request, extra_context=None):

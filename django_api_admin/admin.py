@@ -1,34 +1,59 @@
 from django.contrib import admin
 
-from .models import Author
+from .models import Author, Publisher
 from .options import APIModelAdmin
 from .sites import site
 
 
 # register in api_admin_site
+@admin.register(Author, site=site)
 class AuthorAPIAdmin(APIModelAdmin):
-    list_display = ['name', 'is_old_enough']
-    list_filter = ['is_vip', 'age']
+    list_display = ('name', 'age', 'user', 'is_old_enough', 'gender')
+    list_filter = ('is_vip', 'age')
     list_per_page = 2
+    search_fields = ('name',)
+    raw_id_fields = ('publisher',)
+    ordering = ('-age',)
+    fieldsets = (
+        ('Information', {'fields': (('name', 'age'), 'is_vip', 'user', 'gender')}),
+    )
+    date_hierarchy = 'date_joined'
+    exclude = ('gender',)
 
     @admin.display(description='is this author old enough')
     def is_old_enough(self, obj):
         return obj.age > 10
 
 
-site.register(Author, AuthorAPIAdmin)
+@admin.register(Publisher, site=site)
+class PublisherAPIAdmin(APIModelAdmin):
+    search_fields = ('name',)
 
 
 # register in default admin site
 class AuthorAdmin(admin.ModelAdmin):
-    list_display = ('name', 'age', 'is_a_vip')
+    list_display = ('name', 'age', 'is_a_vip', 'user', 'gender')
     list_filter = ('is_vip', 'age')
     list_per_page = 4
+    raw_id_fields = ('publisher',)
+    autocomplete_fields = ('publisher',)
     search_fields = ('name',)
+    ordering = ('-age',)
+    fieldsets = (
+        ('Information', {'fields': (('name', 'age'), 'is_vip', 'user')}),
+    )
+    # a list of field names to exclude from the add/change form.
+    exclude = ('gender',)
+    date_hierarchy = 'date_joined'
 
     @admin.display(description='is this author a vip')
     def is_a_vip(self, obj):
         return obj.is_vip
 
 
+class PublisherAdmin(admin.ModelAdmin):
+    search_fields = ('name',)
+
+
 admin.site.register(Author, AuthorAdmin)
+admin.site.register(Publisher, PublisherAdmin)

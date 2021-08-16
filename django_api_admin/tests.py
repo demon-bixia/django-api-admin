@@ -1,17 +1,21 @@
+import json
+
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.http import JsonResponse
 from django.urls import path
 from django.urls import reverse
+from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase, URLPatternsTestCase, APIRequestFactory, force_authenticate
 
-from .models import Author
+from .models import Author, Publisher
 from .options import APIModelAdmin
 from .sites import site
 
 UserModel = get_user_model()
 renderer = JSONRenderer()
+parser = JSONParser()
 
 
 class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
@@ -149,7 +153,6 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_i18n_javascript(self):
-        import json
 
         # test if the i18n_javascript view works
         url = reverse('api_admin:language_catalog')
@@ -238,10 +241,15 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
         self.client.force_login(user=self.user)
 
         # create some valid authors
-        Author.objects.create(name="muhammad", age=20, is_vip=True)
-        Author.objects.create(name="Ali", age=20, is_vip=False)
-        Author.objects.create(name="Omar", age=60, is_vip=True)
+        Author.objects.create(name="muhammad", age=20, is_vip=True, user_id=self.user.pk)
+        Author.objects.create(name="Ali", age=20, is_vip=False, user_id=self.user.pk)
+        Author.objects.create(name="Omar", age=60, is_vip=True, user_id=self.user.pk)
         self.author_info = (Author._meta.app_label, Author._meta.model_name)
+
+        # create some valid publishers
+        Publisher.objects.create(name='rock')
+        Publisher.objects.create(name='paper')
+        Publisher.objects.create(name='scissor')
 
     def test_admin_context_view(self):
         url = reverse('api_admin:%s_%s_context' % self.author_info)
@@ -257,7 +265,9 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertNotEqual(response.data['rows'], [])
-        self.assertEqual(response.data['columns'], [{'name': 'name'}, {'is_old_enough': 'is this author old enough'}])
+        self.assertEqual(response.data['columns'], [{'name': 'name'}, {'age': 'age'}, {'user': 'user'},
+                                                    {'is_old_enough': 'is this author old enough'},
+                                                    {'gender': 'gender'}])
 
         # test filtering works
         url = reverse('api_admin:%s_%s_changelist' % self.author_info) + '?is_vip__exact=1&age__exact=60'
@@ -276,6 +286,11 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
 
+        # test searching
+        url = reverse('api_admin:%s_%s_changelist' % self.author_info) + '?name=muhammad'
+        response = self.client.get(url)
+        self.assertEqual(len(response.data['rows']), 1)
+
     def test_list_view(self):
         url = reverse('api_admin:%s_%s_list' % self.author_info)
         response = self.client.get(url)
@@ -287,6 +302,14 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['name'], 'muhammad')
+
+    def test_autocomplete_views(self):
+        # GET /admin/autocomplete/?term=p&app_label=django_api_admin&model_name=author&field_name=publisher
+        url = reverse(
+            'api_admin:autocomplete') + '?term=r&app_label=django_api_admin&model_name=author&field_name=publisher'
+        response = self.client.get(url)
+        data = json.loads(response.data['content'])
+        self.assertEqual(int(data['results'][0]['id']), 1)
 
     def test_performing_actions(self):
         action_dict = {
@@ -329,7 +352,7 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_delete_view(self):
-        author = Author.objects.create(name="test", age=20, is_vip=True)
+        author = Author.objects.create(name="test", age=20, is_vip=True, user_id=self.user.pk)
         url = reverse('api_admin:%s_%s_delete' % self.author_info, kwargs={'object_id': author.pk})
         response = self.client.post(url)
         self.assertEqual(response.status_code, 200)
@@ -343,7 +366,7 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
         self.assertTrue(len(response.data) > 0)
 
     def test_delete_view_bad_to_field(self):
-        author = Author.objects.create(name="test2", age=20, is_vip=True)
+        author = Author.objects.create(name="test2", age=20, is_vip=True, user_id=self.user.pk)
         url = reverse('api_admin:%s_%s_delete' % self.author_info, kwargs={'object_id': author.pk}) + '?_to_field=name'
         response = self.client.post(url)
         self.assertEqual(response.status_code, 400)
@@ -355,7 +378,8 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
         data = {
             'name': 'test4',
             'age': 60,
-            'is_vip': True
+            'is_vip': True,
+            'user': self.user.pk,
         }
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
@@ -368,7 +392,7 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
         self.assertTrue(len(response.data) > 0)
 
     def test_change_view(self):
-        author = Author.objects.create(name='hassan', age=60, is_vip=False)
+        author = Author.objects.create(name='hassan', age=60, is_vip=False, user_id=self.user.pk)
         url = reverse('api_admin:%s_%s_change' % self.author_info, kwargs={'object_id': author.pk})
         data = {
             'name': 'muhammad',
@@ -392,17 +416,20 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
             {
                 'name': 'test1',
                 'age': '60',
-                'is_vip': True
+                'is_vip': True,
+                'user': self.user.pk
             },
             {
                 'name': 'test2',
                 'age': '60',
-                'is_vip': True
+                'is_vip': True,
+                'user': self.user.pk
             },
             {
                 'name': 'test3',
                 'age': '60',
-                'is_vip': True
+                'is_vip': True,
+                'user': self.user.pk
             },
         ]
         for author in authors:

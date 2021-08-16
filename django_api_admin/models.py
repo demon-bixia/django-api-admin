@@ -1,8 +1,19 @@
 """
     Test Models
 """
+
+from django.contrib.auth import get_user_model
 from django.db import models
 from django.urls import reverse
+
+User = get_user_model()
+
+
+class Publisher(models.Model):
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
 
 
 class Author(models.Model):
@@ -10,6 +21,10 @@ class Author(models.Model):
     name = models.CharField(max_length=100)
     age = models.IntegerField(null=True, choices=age_choices)
     is_vip = models.BooleanField(default=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    publisher = models.ManyToManyField(Publisher)
+    gender = models.CharField(max_length=20, blank=False, null=False)
+    date_joined = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
