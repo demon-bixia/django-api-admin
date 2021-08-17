@@ -464,7 +464,6 @@ class DeleteView(APIView):
         return self.delete(*args, **kwargs)
 
 
-# todo try to add action form to browsable api
 class HandleActionView(APIView):
     """
         Preform admin actions using json.
@@ -480,12 +479,10 @@ class HandleActionView(APIView):
         }
     """
     permission_classes = []
+    serializer_class = None
 
     def post(self, request, model_admin):
-
-        serializer_class = model_admin.get_action_serializer(request)
-        serializer = serializer_class(data=request.data)
-
+        serializer = self.serializer_class(data=request.data)
         # validate the action selected
         if serializer.is_valid():
             # preform the action on the selected items

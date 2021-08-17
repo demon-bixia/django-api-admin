@@ -73,7 +73,15 @@ class APIModelAdmin(ModelAdmin):
         from rest_framework import serializers
         return type('%sActionSerializer' % self.__class__.__name__, (ActionSerializer,), {
             'action': serializers.ChoiceField(choices=[*self.get_action_choices(request)]),
+            'selected_ids': serializers.MultipleChoiceField(choices=[*self.get_selected_id(request)])
         })
+
+    def get_selected_id(self, request):
+        queryset = self.get_queryset(request)
+        choices = []
+        for item in queryset:
+            choices.append((f'{item.pk}', f'{str(item)}'))
+        return choices
 
     def get_urls(self):
         from django.urls import path
@@ -144,7 +152,8 @@ class APIModelAdmin(ModelAdmin):
 
     def handle_action_view(self, request):
         defaults = {
-            'permission_classes': self.admin_site.default_permission_classes
+            'permission_classes': self.admin_site.default_permission_classes,
+            'serializer_class': self.get_action_serializer(request)
         }
         return api_views.HandleActionView.as_view(**defaults)(request, self)
 
