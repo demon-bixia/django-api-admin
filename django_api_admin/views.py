@@ -206,7 +206,7 @@ class AdminContextView(APIView):
 class ChangeListView(APIView):
     """
     Return a json object representing the django admin changelist table.
-    supports querystring filtering, pagination and search also based on list display.
+    supports querystring filtering, pagination and search also changes based on list display.
     Note: this is different from the list all objects view.
     example returned json:
 
@@ -341,6 +341,11 @@ class AddView(APIView):
     serializer_class = None
     permission_classes = []
 
+    def get(self, request, model_admin):
+        serializer = self.serializer_class()
+        form_fields = model_admin.get_form_fields(serializer)
+        return Response(form_fields, status=status.HTTP_200_OK)
+
     def post(self, request, model_admin):
         # if the user doesn't have add permission respond with permission denied
         if not model_admin.has_add_permission(request):
@@ -400,6 +405,11 @@ class ChangeView(APIView):
         # initiate the serializer based on the request method
         serializer = self.get_serializer_instance(request, obj)
 
+        # if the method is get return the change form fields dictionary
+        if request.method == 'GET':
+            form_fields = model_admin.get_form_fields(serializer, change=True)
+            return Response(form_fields, status=status.HTTP_200_OK)
+
         # update and log the changes to the object
         if serializer.is_valid():
             updated_object = serializer.save()
@@ -418,6 +428,9 @@ class ChangeView(APIView):
         return self.update(request, object_id, model_admin)
 
     def patch(self, request, object_id, model_admin):
+        return self.update(request, object_id, model_admin)
+
+    def get(self, request, object_id, model_admin):
         return self.update(request, object_id, model_admin)
 
 
