@@ -109,13 +109,14 @@ class APIAdminSite(AdminSite):
         regex = r'^(?P<app_label>' + '|'.join(valid_app_labels) + ')/$'
         urlpatterns.append(re_path(regex, self.api_admin_view(self.app_index), name='app_list'))
 
-        # add model_admin views
+        # add model_admin urls
         for model, model_admin in self._registry.items():
             urlpatterns += [
                 path('%s/%s/' % (model._meta.app_label, model._meta.model_name), include(model_admin.urls)),
             ]
 
         # add optional views
+        # todo include view on site to browsable api
         if self.include_view_on_site_view:
             urlpatterns.append(path(
                 'r/<int:content_type_id>/<path:object_id>/',
@@ -131,7 +132,6 @@ class APIAdminSite(AdminSite):
                          isinstance(url, URLPattern) and url.name and url.name not in excluded_url_names]
             root_view = api_views.AdminAPIRootView.as_view(root_urls=root_urls)
             urlpatterns.append(path('', root_view, name='api-root'))
-
         return urlpatterns
 
     @property
@@ -223,12 +223,10 @@ class APIAdminSite(AdminSite):
         paginator = self.default_pagination_class()
         return paginator.paginate_queryset(queryset.order_by('pk'), request, view=view)
 
-    # admin site wide views
     def index(self, request, extra_context=None):
         defaults = {
             'permission_classes': self.default_permission_classes,
         }
-
         return api_views.IndexView.as_view(**defaults)(request, admin_site=self)
 
     def app_index(self, request, app_label, extra_context=None):
@@ -243,7 +241,6 @@ class APIAdminSite(AdminSite):
             'serializer_class': self.login_serializer,
             'user_serializer_class': self.user_serializer,
         }
-
         return api_views.LoginView.as_view(**defaults)(request)
 
     def logout(self, request, extra_context=None):
@@ -251,7 +248,6 @@ class APIAdminSite(AdminSite):
             'permission_classes': self.default_permission_classes,
             'user_serializer_class': self.user_serializer,
         }
-
         return api_views.LogoutView.as_view(**defaults)(request)
 
     def password_change(self, request, extra_context=None):

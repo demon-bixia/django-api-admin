@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Author, Publisher
+from .models import Author, Publisher, Book
 from .options import APIModelAdmin
 from .sites import site
 
@@ -31,6 +31,10 @@ class PublisherAPIAdmin(APIModelAdmin):
 
 
 # register in default admin site
+class BookInline(admin.TabularInline):
+    model = Book
+
+
 class AuthorAdmin(admin.ModelAdmin):
     list_display = ('name', 'age', 'is_a_vip', 'user', 'gender')
     list_filter = ('is_vip', 'age')
@@ -45,6 +49,8 @@ class AuthorAdmin(admin.ModelAdmin):
     # a list of field names to exclude from the add/change form.
     exclude = ('gender',)
     date_hierarchy = 'date_joined'
+
+    inlines = [BookInline, ]
 
     @admin.display(description='is this author a vip')
     def is_a_vip(self, obj):

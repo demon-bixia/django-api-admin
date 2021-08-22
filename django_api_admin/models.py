@@ -31,3 +31,11 @@ class Author(models.Model):
 
     def get_absolute_url(self):
         return reverse('author-detail', kwargs={'pk': self.pk})
+
+
+class Book(models.Model):
+    title = models.CharField(max_length=100)
+    author = models.ForeignKey(Author, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.title} by {self.author}"

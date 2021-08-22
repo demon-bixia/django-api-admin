@@ -170,6 +170,7 @@ class AdminLogView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+# todo clean browsable api urls based on how client uses them
 class AdminAPIRootView(APIView):
     """
     A list of all root urls in django_api_admin
@@ -341,10 +342,11 @@ class AddView(APIView):
     serializer_class = None
     permission_classes = []
 
+    # todo add form context to add/change view get methods
     def get(self, request, model_admin):
         serializer = self.serializer_class()
         form_fields = model_admin.get_form_fields(serializer)
-        return Response(form_fields, status=status.HTTP_200_OK)
+        return Response({'form': {'fields': form_fields}}, status=status.HTTP_200_OK)
 
     def post(self, request, model_admin):
         # if the user doesn't have add permission respond with permission denied
@@ -408,7 +410,7 @@ class ChangeView(APIView):
         # if the method is get return the change form fields dictionary
         if request.method == 'GET':
             form_fields = model_admin.get_form_fields(serializer, change=True)
-            return Response(form_fields, status=status.HTTP_200_OK)
+            return Response({'form': {'fields': form_fields}}, status=status.HTTP_200_OK)
 
         # update and log the changes to the object
         if serializer.is_valid():
