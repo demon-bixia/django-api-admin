@@ -272,7 +272,7 @@ class ChangeListView(APIView):
         return rows
 
 
-class ModelAdminListView(APIView):
+class ListView(APIView):
     """
     Return a list containing all instances of this model.
     """
@@ -280,43 +280,54 @@ class ModelAdminListView(APIView):
     serializer_class = None
     permission_classes = []
 
-    def get(self, request, model_admin):
-        queryset = model_admin.model.objects.all()
-        page = model_admin.admin_site.paginate_queryset(queryset, request, view=self)
+    def get(self, request, admin):
+        queryset = admin.get_queryset(request)
+        page = admin.admin_site.paginate_queryset(queryset, request, view=self)
         serializer = self.serializer_class(page, many=True)
         data = serializer.data
 
-        info = (
-            model_admin.admin_site.name,
-            model_admin.model._meta.app_label,
-            model_admin.model._meta.model_name
-        )
+        if admin.is_inline:
+            info = (
+                admin.admin_site.name, admin.parent_model._meta.app_label,
+                admin.parent_model._meta.model_name, admin.opts.app_label,
+                admin.opts.model_name
+            )
+            pattern = '%s:%s_%s_%s_%s_detail'
+        else:
+            info = (
+                admin.admin_site.name,
+                admin.model._meta.app_label,
+                admin.model._meta.model_name
+            )
+            pattern = '%s:%s_%s_detail'
+
         for item in data:
-            item['detail_url'] = reverse('%s:%s_%s_detail' % info, kwargs={'object_id': int(item['pk'])},
-                                         request=request)
+            item['detail_url'] = reverse(pattern % info, kwargs={'object_id': int(item['pk'])}, request=request)
         return Response(data, status=status.HTTP_200_OK)
 
 
-class ModelAdminDetailView(APIView):
+class DetailView(APIView):
     """
     GET one instance of this model using pk and to_fields.
     """
     permission_classes = []
     serializer_class = None
 
-    def get(self, request, object_id, model_admin):
-        # validate the reverse to field reference
-        to_field = request.query_params.get(TO_FIELD_VAR)
-        if to_field and not model_admin.to_field_allowed(request, to_field):
-            return Response({'detail': 'The field %s cannot be referenced.' % to_field},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        obj = model_admin.get_object(request, unquote(object_id), to_field)
+    def get(self, request, object_id, admin):
+        if not admin.is_inline:
+            # validate the reverse to field reference
+            to_field = request.query_params.get(TO_FIELD_VAR)
+            if to_field and not admin.to_field_allowed(request, to_field):
+                return Response({'detail': 'The field %s cannot be referenced.' % to_field},
+                                status=status.HTTP_400_BAD_REQUEST)
+            obj = admin.get_object(request, unquote(object_id), to_field)
+        else:
+            obj = admin.get_object(request, unquote(object_id))
 
         # if the object doesn't exist respond with not found
         if obj is None:
             msg = _("%(name)s with ID “%(key)s” doesn't exist. Perhaps it was deleted?") % {
-                'name': model_admin.model._meta.verbose_name,
+                'name': admin.model._meta.verbose_name,
                 'key': unquote(object_id),
             }
             return Response({'detail': msg}, status=status.HTTP_404_NOT_FOUND)
@@ -324,18 +335,29 @@ class ModelAdminDetailView(APIView):
         serializer = self.serializer_class(obj)
         data = serializer.data
 
-        info = (
-            model_admin.admin_site.name,
-            model_admin.model._meta.app_label,
-            model_admin.model._meta.model_name
-        )
-        data['delete_url'] = reverse('%s:%s_%s_delete' % info, kwargs={'object_id': data['pk']}, request=request)
-        data['change_url'] = reverse('%s:%s_%s_change' % info, kwargs={'object_id': data['pk']}, request=request)
-        data['history_url'] = reverse('%s:%s_%s_history' % info, kwargs={'object_id': data['pk']}, request=request)
+        if not admin.is_inline:
+            info = (
+                admin.admin_site.name,
+                admin.model._meta.app_label,
+                admin.model._meta.model_name,
+            )
+            pattern = '%s:%s_%s_'
+            data['history_url'] = reverse((pattern + 'history') % info, kwargs={'object_id': data['pk']},
+                                          request=request)
+        else:
+            info = (
+                admin.admin_site.name, admin.parent_model._meta.app_label,
+                admin.parent_model._meta.model_name, admin.opts.app_label,
+                admin.opts.model_name
+            )
+            pattern = '%s:%s_%s_%s_%s_'
+
+        data['delete_url'] = reverse((pattern + 'delete') % info, kwargs={'object_id': data['pk']}, request=request)
+        data['change_url'] = reverse((pattern + 'change') % info, kwargs={'object_id': data['pk']}, request=request)
         return Response(data, status=status.HTTP_200_OK)
 
 
-class ModelAdminAddView(APIView):
+class AddView(APIView):
     """
     Add new instances of this model.
     """
@@ -369,7 +391,7 @@ class ModelAdminAddView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ModelAdminChangeView(APIView):
+class ChangeView(APIView):
     """
     Change an existing instance of this model.
     """
@@ -436,7 +458,7 @@ class ModelAdminChangeView(APIView):
         return self.update(request, object_id, model_admin)
 
 
-class ModelAdminDeleteView(APIView):
+class DeleteView(APIView):
     """
     Delete a single object from this model
     """
@@ -562,66 +584,3 @@ class HistoryView(APIView):
         serializer = self.serializer_class(page, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-# inline model admin views
-class InlineAdminListView(APIView):
-    permission_classes = []
-    serializer_class = None
-
-    def get(self, request, inline_admin):
-        queryset = inline_admin.get_queryset(request)
-        page = inline_admin.admin_site.paginate_queryset(queryset, request, view=self)
-        serializer = self.serializer_class(page, many=True)
-        data = serializer.data
-
-        info = (
-            inline_admin.admin_site.name, inline_admin.parent_model._meta.app_label,
-            inline_admin.parent_model._meta.model_name, inline_admin.opts.app_label,
-            inline_admin.opts.model_name
-        )
-        for item in data:
-            item['detail_url'] = reverse('%s:%s_%s_%s_%s_detail' % info, kwargs={'object_id': int(item['pk'])},
-                                         request=request)
-        return Response(data, status=status.HTTP_200_OK)
-
-
-class InlineAdminDetailView(APIView):
-    permission_classes = []
-    serializer_class = None
-
-    def get(self, request, object_id, inline_admin):
-        queryset = inline_admin.get_queryset(request)
-        model = queryset.model
-        try:
-            obj = queryset.get(pk=unquote(object_id))
-        except model.DoesNotExist:
-            raise NotFound
-
-        serializer = self.serializer_class(obj)
-        data = serializer.data
-
-        info = (
-            inline_admin.admin_site.name, inline_admin.parent_model._meta.app_label,
-            inline_admin.parent_model._meta.model_name, inline_admin.opts.app_label,
-            inline_admin.opts.model_name
-        )
-        data['delete_url'] = reverse('%s:%s_%s_%s_%s_delete' % info, kwargs={'object_id': data['pk']}, request=request)
-        data['change_url'] = reverse('%s:%s_%s_%s_%s_change' % info, kwargs={'object_id': data['pk']}, request=request)
-        return Response(data, status=status.HTTP_200_OK)
-
-
-class InlineAdminDeleteView(APIView):
-    def delete(self, request, object_id):
-        pass
-
-    def post(self, *args, **kwargs):
-        return self.delete(*args, **kwargs)
-
-
-class InlineAdminChangeView(APIView):
-    def put(self, request):
-        pass
-
-    def patch(self, request):
-        pass

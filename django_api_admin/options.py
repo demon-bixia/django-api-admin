@@ -1,5 +1,6 @@
 from django.contrib.admin.options import ModelAdmin, InlineModelAdmin
 from django.contrib.admin.utils import flatten_fieldsets
+from django.contrib.auth import get_permission_codename
 from django.db import transaction, router
 from django.db.models import Model
 from rest_framework import serializers
@@ -8,12 +9,11 @@ from django_api_admin.serializers import ActionSerializer
 from . import views as api_views
 
 
-# noinspection PyUnresolvedReferences
+# noinspection PyUnresolvedReferences,PyUnusedLocal
 class BaseAPIModelAdmin:
     """
     Shared behavior between APIModelAdmin, APIInlineModelAdmin.
     """
-    # these attributes will be part of admin context json object
 
     # these attributes will be sent with every field
     # to the client when requesting a form.
@@ -29,6 +29,7 @@ class BaseAPIModelAdmin:
     ]
 
     # todo update model_admin/inline_model_admin options based on how clients uses them
+    # these attributes will be part of admin context json object
     admin_class_options = [
         # base model admin attributes
         'fields', 'fieldsets', 'exclude', 'filter_horizontal', 'ordering', 'filter_vertical',
@@ -95,7 +96,7 @@ class BaseAPIModelAdmin:
 
         return form_fields
 
-    def get_permission_map(self, request):
+    def get_permission_map(self, request, obj=None):
         """
         return a dictionary of user permissions in this module.
         """
@@ -108,6 +109,83 @@ class BaseAPIModelAdmin:
             'has_view_or_change_permission': self.has_view_or_change_permission(request),
             'has_module_permission': self.has_module_permission(request),
         }
+
+    def has_add_permission(self, request, obj=None):
+        opts = self.opts
+        codename = get_permission_codename('add', opts)
+        return request.user.has_perm("%s.%s" % (opts.app_label, codename))
+
+    def has_change_permission(self, request, obj=None):
+        opts = self.opts
+        codename = get_permission_codename('change', opts)
+        return request.user.has_perm("%s.%s" % (opts.app_label, codename))
+
+    def has_delete_permission(self, request, obj=None):
+        opts = self.opts
+        codename = get_permission_codename('delete', opts)
+        return request.user.has_perm("%s.%s" % (opts.app_label, codename))
+
+    def has_view_permission(self, request, obj=None):
+        opts = self.opts
+        codename_view = get_permission_codename('view', opts)
+        codename_change = get_permission_codename('change', opts)
+        return (
+                request.user.has_perm('%s.%s' % (opts.app_label, codename_view)) or
+                request.user.has_perm('%s.%s' % (opts.app_label, codename_change))
+        )
+
+    def has_view_or_change_permission(self, request, obj=None):
+        return self.has_view_permission(request) or self.has_change_permission(request)
+
+    def has_module_permission(self, request):
+        return request.user.has_module_perms(self.opts.app_label)
+
+    @property
+    def is_inline(self):
+        return isinstance(self, InlineModelAdmin)
+
+    def admin_context_view(self, request):
+        defaults = {
+            'permission_classes': self.admin_site.default_permission_classes
+        }
+        return api_views.AdminContextView.as_view(**defaults)(request, self)
+
+    def list_view(self, request):
+        defaults = {
+            'serializer_class': self.get_serializer_class(request),
+            'permission_classes': self.admin_site.default_permission_classes,
+        }
+        return api_views.ListView.as_view(**defaults)(request, self)
+
+    def detail_view(self, request, object_id):
+        defaults = {
+            'serializer_class': self.get_serializer_class(request),
+            'permission_classes': self.admin_site.default_permission_classes,
+        }
+        return api_views.DetailView.as_view(**defaults)(request, object_id, self)
+
+    def add_view(self, request, **kwargs):
+        defaults = {
+            'serializer_class': self.get_serializer_class(request),
+            'permission_classes': self.admin_site.default_permission_classes,
+        }
+        with transaction.atomic(using=router.db_for_write(self.model)):
+            return api_views.AddView.as_view(**defaults)(request, self, **kwargs)
+
+    def change_view(self, request, object_id, **kwargs):
+        defaults = {
+            'serializer_class': self.get_serializer_class(request),
+            'permission_classes': self.admin_site.default_permission_classes,
+        }
+        with transaction.atomic(using=router.db_for_write(self.model)):
+            return api_views.ChangeView.as_view(**defaults)(request, object_id, self, **kwargs)
+
+    def delete_view(self, request, object_id, **kwargs):
+        defaults = {
+            'permission_classes': self.admin_site.default_permission_classes
+        }
+        with transaction.atomic(using=router.db_for_write(self.model)):
+            return api_views.DeleteView.as_view(**defaults)(request, object_id, self, **kwargs)
 
 
 # todo test APIModelAdmin get_form_fields views
@@ -172,49 +250,6 @@ class APIModelAdmin(BaseAPIModelAdmin, ModelAdmin):
             ])
         return urlpatterns
 
-    def admin_context_view(self, request):
-        defaults = {
-            'permission_classes': self.admin_site.default_permission_classes
-        }
-        return api_views.AdminContextView.as_view(**defaults)(request, self)
-
-    def list_view(self, request):
-        defaults = {
-            'serializer_class': self.get_serializer_class(request),
-            'permission_classes': self.admin_site.default_permission_classes,
-        }
-        return api_views.ModelAdminListView.as_view(**defaults)(request, self)
-
-    def detail_view(self, request, object_id):
-        defaults = {
-            'serializer_class': self.get_serializer_class(request),
-            'permission_classes': self.admin_site.default_permission_classes,
-        }
-        return api_views.ModelAdminDetailView.as_view(**defaults)(request, object_id, self)
-
-    def add_view(self, request, **kwargs):
-        defaults = {
-            'serializer_class': self.get_serializer_class(request),
-            'permission_classes': self.admin_site.default_permission_classes,
-        }
-        with transaction.atomic(using=router.db_for_write(self.model)):
-            return api_views.ModelAdminAddView.as_view(**defaults)(request, self, **kwargs)
-
-    def change_view(self, request, object_id, **kwargs):
-        defaults = {
-            'serializer_class': self.get_serializer_class(request),
-            'permission_classes': self.admin_site.default_permission_classes,
-        }
-        with transaction.atomic(using=router.db_for_write(self.model)):
-            return api_views.ModelAdminChangeView.as_view(**defaults)(request, object_id, self, **kwargs)
-
-    def delete_view(self, request, object_id, **kwargs):
-        defaults = {
-            'permission_classes': self.admin_site.default_permission_classes
-        }
-        with transaction.atomic(using=router.db_for_write(self.model)):
-            return api_views.ModelAdminDeleteView.as_view(**defaults)(request, object_id, self)
-
     def changelist_view(self, request, **kwargs):
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes
@@ -249,6 +284,14 @@ class InlineAPIModelAdmin(BaseAPIModelAdmin, InlineModelAdmin):
         super().__init__(*args, **kwargs)
         self.admin_class_options += super().admin_class_options
 
+    def get_object(self, request, object_id):
+        queryset = self.get_queryset(request)
+        model = queryset.model
+        try:
+            return queryset.get(pk=object_id)
+        except model.DoesNotExist:
+            return None
+
     def get_urls(self):
         from django.urls import path
 
@@ -257,9 +300,9 @@ class InlineAPIModelAdmin(BaseAPIModelAdmin, InlineModelAdmin):
         admin_view = self.admin_site.api_admin_view
 
         return [
-            # path('context/', admin_view(self.admin_context_view), name='%s_%s_%s_%s_context' % info),
+            path('context/', admin_view(self.admin_context_view), name='%s_%s_%s_%s_context' % info),
             path('list/', admin_view(self.list_view), name='%s_%s_%s_%s_list' % info),
-            # path('add/', admin_view(self.add_view), name='%s_%s_%s_%s_add' % info),
+            path('add/', admin_view(self.add_view), name='%s_%s_%s_%s_add' % info),
             path('<path:object_id>/detail/', admin_view(self.detail_view), name='%s_%s_%s_%s_detail' % info),
             path('<path:object_id>/change/', admin_view(self.change_view), name='%s_%s_%s_%s_change' % info),
             path('<path:object_id>/delete/', admin_view(self.delete_view), name='%s_%s_%s_%s_delete' % info),
@@ -268,34 +311,6 @@ class InlineAPIModelAdmin(BaseAPIModelAdmin, InlineModelAdmin):
     @property
     def urls(self):
         return self.get_urls()
-
-    def list_view(self, request):
-        defaults = {
-            'serializer_class': self.get_serializer_class(request),
-            'permission_classes': self.admin_site.default_permission_classes,
-        }
-        return api_views.InlineAdminListView.as_view(**defaults)(request, self)
-
-    def detail_view(self, request, object_id):
-        defaults = {
-            'serializer_class': self.get_serializer_class(request),
-            'permission_classes': self.admin_site.default_permission_classes,
-        }
-        return api_views.InlineAdminDetailView.as_view(**defaults)(request, object_id, self)
-
-    def delete_view(self, request, object_id):
-        defaults = {
-            'serializer_class': self.get_serializer_class(request),
-            'permission_classes': self.admin_site.default_permission_classes,
-        }
-        return api_views.InlineAdminDeleteView.as_view(**defaults)(request, object_id, self)
-
-    def change_view(self, request, object_id):
-        defaults = {
-            'serializer_class': self.get_serializer_class(request),
-            'permission_classes': self.admin_site.default_permission_classes,
-        }
-        return api_views.InlineAdminChangeView.as_view(**defaults)(request, object_id, self)
 
 
 class TabularInlineAPI(InlineAPIModelAdmin):
