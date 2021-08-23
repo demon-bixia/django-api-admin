@@ -9,7 +9,7 @@ from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APITestCase, URLPatternsTestCase, APIRequestFactory, force_authenticate
 
-from .models import Author, Publisher
+from .models import Author, Publisher, Book
 from .options import APIModelAdmin
 from .sites import site
 
@@ -441,3 +441,41 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)
+
+
+class InlineModelAdminTestCase(APITestCase, URLPatternsTestCase):
+    urlpatterns = [
+        path('api_admin/', site.urls),
+    ]
+
+    def setUp(self) -> None:
+        # create a superuser
+        self.user = UserModel.objects.create_superuser(username='admin')
+        self.user.set_password('password')
+        self.user.save()
+        # authenticate the superuser
+        self.client.force_login(user=self.user)
+        # create some valid publishers
+        p1 = Publisher.objects.create(name='Publishing Company')
+        p2 = Publisher.objects.create(name='Publishing Agency')
+        p3 = Publisher.objects.create(name='Publishing magazine')
+        # create some valid authors
+        self.a1 = Author.objects.create(name="Baumgartner", age=20, is_vip=True, user_id=self.user.pk)
+        self.a1.publisher.add(p1)
+        self.a2 = Author.objects.create(name="Richard Dawkins", age=20, is_vip=False, user_id=self.user.pk)
+        self.a2.publisher.add(p2)
+        self.a3 = Author.objects.create(name="Allen carr", age=60, is_vip=True, user_id=self.user.pk)
+        self.a3.publisher.add(p3)
+        self.author_info = (Author._meta.app_label, Author._meta.model_name)
+        # create some valid Books
+        Book.objects.create(title='High performance django', author=self.a1)
+        Book.objects.create(title='A devils chaplain', author=self.a2)
+        Book.objects.create(title='Easy way to stop smoking', author=self.a3)
+        self.book_info = (*self.author_info, Book._meta.app_label, Book._meta.model_name)
+
+    def test_inline_list_view(self):
+        url = reverse('api_admin:%s_%s_%s_%s_list' % self.book_info) + '?p=3&page_size=1'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['title'], 'Easy way to stop smoking')

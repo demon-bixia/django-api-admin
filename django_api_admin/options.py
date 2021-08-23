@@ -31,9 +31,8 @@ class BaseAPIModelAdmin:
     # todo update model_admin/inline_model_admin options based on how clients uses them
     admin_class_options = [
         # base model admin attributes
-        'autocomplete_fields', 'raw_id_fields', 'fields', 'exclude', 'fieldsets', 'filter_vertical',
-        'filter_horizontal', 'radio_fields', 'prepopulated_fields', 'readonly_fields',
-        'ordering', 'sortable_by', 'view_on_site', 'show_full_result_count',
+        'fields', 'fieldsets', 'exclude', 'filter_horizontal', 'ordering', 'filter_vertical',
+        'prepopulated_fields', 'radio_fields', 'readonly_fields', 'raw_id_fields', 'autocomplete_fields',
     ]
 
     def get_admin_options(self, request):
@@ -49,7 +48,7 @@ class BaseAPIModelAdmin:
         fieldsets_fields.append('pk')
         # get excluded fields
         excluded = self.get_exclude(request, obj)
-        exclude = list(excluded) if excluded is not None else None
+        exclude = list(excluded) if excluded is not None else []
         # get read only fields
         readonly_fields = self.get_readonly_fields(request, obj)
         # subtract excluded fields from fieldsets_fields
@@ -96,49 +95,6 @@ class BaseAPIModelAdmin:
 
         return form_fields
 
-    def admin_context_view(self, request):
-        defaults = {
-            'permission_classes': self.admin_site.default_permission_classes
-        }
-        return api_views.AdminContextView.as_view(**defaults)(request, self)
-
-    def list_view(self, request):
-        defaults = {
-            'serializer_class': self.get_serializer_class(request),
-            'permission_classes': self.admin_site.default_permission_classes,
-        }
-        return api_views.ListView.as_view(**defaults)(request, self)
-
-    def detail_view(self, request, object_id):
-        defaults = {
-            'serializer_class': self.get_serializer_class(request),
-            'permission_classes': self.admin_site.default_permission_classes,
-        }
-        return api_views.DetailView.as_view(**defaults)(request, object_id, self)
-
-    def add_view(self, request, **kwargs):
-        defaults = {
-            'serializer_class': self.get_serializer_class(request),
-            'permission_classes': self.admin_site.default_permission_classes,
-        }
-        with transaction.atomic(using=router.db_for_write(self.model)):
-            return api_views.AddView.as_view(**defaults)(request, self, **kwargs)
-
-    def change_view(self, request, object_id, **kwargs):
-        defaults = {
-            'serializer_class': self.get_serializer_class(request),
-            'permission_classes': self.admin_site.default_permission_classes,
-        }
-        with transaction.atomic(using=router.db_for_write(self.model)):
-            return api_views.ChangeView.as_view(**defaults)(request, object_id, self, **kwargs)
-
-    def delete_view(self, request, object_id):
-        defaults = {
-            'permission_classes': self.admin_site.default_permission_classes
-        }
-        with transaction.atomic(using=router.db_for_write(self.model)):
-            return api_views.DeleteView.as_view(**defaults)(request, object_id, self)
-
     def get_permission_map(self, request):
         """
         return a dictionary of user permissions in this module.
@@ -168,7 +124,7 @@ class APIModelAdmin(BaseAPIModelAdmin, ModelAdmin):
         # model admin attributes
         'list_display', 'list_display_links', 'list_filter', 'list_select_related', 'list_per_page',
         'list_max_show_all', 'list_editable', 'search_fields', 'date_hierarchy', 'save_as', 'save_on_top',
-        'save_as_continue', 'preserve_filters',
+        'save_as_continue', 'preserve_filters', 'show_full_result_count', 'sortable_by', 'ordering', 'view_on_site',
     ]
 
     def __init__(self, *args, **kwargs):
@@ -208,12 +164,56 @@ class APIModelAdmin(BaseAPIModelAdmin, ModelAdmin):
 
         # add inline admins urls
         # todo include inline urls in browsable api
-        for inline in self.inlines:
+        for inline_class in self.inlines:
+            inline = inline_class(self.model, self.admin_site)
             opts = inline.model._meta
-            urlpatterns += [
+            urlpatterns.insert(0, *[
                 path('%s/%s/' % (opts.app_label, opts.model_name), include(inline.urls)),
-            ]
+            ])
         return urlpatterns
+
+    def admin_context_view(self, request):
+        defaults = {
+            'permission_classes': self.admin_site.default_permission_classes
+        }
+        return api_views.AdminContextView.as_view(**defaults)(request, self)
+
+    def list_view(self, request):
+        defaults = {
+            'serializer_class': self.get_serializer_class(request),
+            'permission_classes': self.admin_site.default_permission_classes,
+        }
+        return api_views.ModelAdminListView.as_view(**defaults)(request, self)
+
+    def detail_view(self, request, object_id):
+        defaults = {
+            'serializer_class': self.get_serializer_class(request),
+            'permission_classes': self.admin_site.default_permission_classes,
+        }
+        return api_views.ModelAdminDetailView.as_view(**defaults)(request, object_id, self)
+
+    def add_view(self, request, **kwargs):
+        defaults = {
+            'serializer_class': self.get_serializer_class(request),
+            'permission_classes': self.admin_site.default_permission_classes,
+        }
+        with transaction.atomic(using=router.db_for_write(self.model)):
+            return api_views.ModelAdminAddView.as_view(**defaults)(request, self, **kwargs)
+
+    def change_view(self, request, object_id, **kwargs):
+        defaults = {
+            'serializer_class': self.get_serializer_class(request),
+            'permission_classes': self.admin_site.default_permission_classes,
+        }
+        with transaction.atomic(using=router.db_for_write(self.model)):
+            return api_views.ModelAdminChangeView.as_view(**defaults)(request, object_id, self, **kwargs)
+
+    def delete_view(self, request, object_id, **kwargs):
+        defaults = {
+            'permission_classes': self.admin_site.default_permission_classes
+        }
+        with transaction.atomic(using=router.db_for_write(self.model)):
+            return api_views.ModelAdminDeleteView.as_view(**defaults)(request, object_id, self)
 
     def changelist_view(self, request, **kwargs):
         defaults = {
@@ -237,7 +237,7 @@ class APIModelAdmin(BaseAPIModelAdmin, ModelAdmin):
 
 
 # todo test inline model admin views and permissions
-class APIInlineModelAdmin(BaseAPIModelAdmin, InlineModelAdmin):
+class InlineAPIModelAdmin(BaseAPIModelAdmin, InlineModelAdmin):
     """
     Edit models connected with a relationship in one page
     """
@@ -251,27 +251,42 @@ class APIInlineModelAdmin(BaseAPIModelAdmin, InlineModelAdmin):
 
     def get_urls(self):
         from django.urls import path
-        info = (self.parent_model._meta.applabel, self.parent_model._meta.model_name,
+
+        info = (self.parent_model._meta.app_label, self.parent_model._meta.model_name,
                 self.opts.app_label, self.opts.model_name)
         admin_view = self.admin_site.api_admin_view
 
         return [
-            path('context/', admin_view(self.admin_context_view), name='%s_%s_%s_%s_context' % info),
+            # path('context/', admin_view(self.admin_context_view), name='%s_%s_%s_%s_context' % info),
             path('list/', admin_view(self.list_view), name='%s_%s_%s_%s_list' % info),
-            path('add/', admin_view(self.add_view), name='%s_%s_%s_%s_add' % info),
-            path('<path:object_id>/detail/', admin_view(self.delete_view), name='%s_%s_%s_%s_detail' % info),
-            path('<path:object_id>/change/', admin_view(self.change_view), name='%s_%s_%s_%s_change' % info),
-            path('<path:object_id>/delete/', admin_view(self.delete_view), name='%s_%s_%s_%s_delete' % info),
+            # path('add/', admin_view(self.add_view), name='%s_%s_%s_%s_add' % info),
+            path('<path:object_id>/detail/', admin_view(self.detail_view), name='%s_%s_%s_%s_detail' % info),
+            # path('<path:object_id>/change/', admin_view(self.change_view), name='%s_%s_%s_%s_change' % info),
+            # path('<path:object_id>/delete/', admin_view(self.delete_view), name='%s_%s_%s_%s_delete' % info),
         ]
 
     @property
     def urls(self):
         return self.get_urls()
 
+    def list_view(self, request):
+        defaults = {
+            'serializer_class': self.get_serializer_class(request),
+            'permission_classes': self.admin_site.default_permission_classes,
+        }
+        return api_views.InlineAdminListView.as_view(**defaults)(request, self)
 
-class APITabularInline(APIInlineModelAdmin):
+    def detail_view(self, request):
+        defaults = {
+            'serializer_class': self.get_serializer_class(request),
+            'permission_classes': self.admin_site.default_permission_classes,
+        }
+        return api_views.InlineAdminDetailView.as_view(**defaults)(request, self)
+
+
+class TabularInlineAPI(InlineAPIModelAdmin):
     admin_style = 'tabular'
 
 
-class APIStackedInline(APIInlineModelAdmin):
+class StackedInlineAPI(InlineAPIModelAdmin):
     admin_style = 'stacked'

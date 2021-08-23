@@ -272,7 +272,7 @@ class ChangeListView(APIView):
         return rows
 
 
-class ListView(APIView):
+class ModelAdminListView(APIView):
     """
     Return a list containing all instances of this model.
     """
@@ -297,7 +297,7 @@ class ListView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
-class DetailView(APIView):
+class ModelAdminDetailView(APIView):
     """
     GET one instance of this model using pk and to_fields.
     """
@@ -335,7 +335,7 @@ class DetailView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
-class AddView(APIView):
+class ModelAdminAddView(APIView):
     """
     Add new instances of this model.
     """
@@ -369,7 +369,7 @@ class AddView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ChangeView(APIView):
+class ModelAdminChangeView(APIView):
     """
     Change an existing instance of this model.
     """
@@ -436,7 +436,7 @@ class ChangeView(APIView):
         return self.update(request, object_id, model_admin)
 
 
-class DeleteView(APIView):
+class ModelAdminDeleteView(APIView):
     """
     Delete a single object from this model
     """
@@ -562,3 +562,36 @@ class HistoryView(APIView):
         serializer = self.serializer_class(page, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# inline model admin views
+class InlineAdminListView(APIView):
+    permission_classes = []
+    serializer_class = None
+
+    def get(self, request, inline_admin):
+        queryset = inline_admin.get_queryset(request)
+        page = inline_admin.admin_site.paginate_queryset(queryset, request, view=self)
+        serializer = self.serializer_class(page, many=True)
+
+        info = (
+            inline_admin.admin_site.name, inline_admin.parent_model._meta.app_label,
+            inline_admin.parent_model._meta.model_name, inline_admin.opts.app_label,
+            inline_admin.opts.model_name
+        )
+
+        data = serializer.data
+
+        for item in data:
+            item['detail_url'] = reverse('%s:%s_%s_%s_%s_detail' % info, kwargs={'object_id': int(item['pk'])},
+                                         request=request)
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class InlineAdminDetailView(APIView):
+    permission_classes = []
+    serializer_class = None
+
+    def get(self, request, inline_admin):
+        pass

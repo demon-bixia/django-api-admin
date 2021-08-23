@@ -1,8 +1,13 @@
+"""These admins are used in tests.py to test django_api_admin."""
 from django.contrib import admin
 
 from .models import Author, Publisher, Book
-from .options import APIModelAdmin
+from .options import APIModelAdmin, TabularInlineAPI
 from .sites import site
+
+
+class APIBookInline(TabularInlineAPI):
+    model = Book
 
 
 # register in api_admin_site
@@ -19,6 +24,7 @@ class AuthorAPIAdmin(APIModelAdmin):
     )
     date_hierarchy = 'date_joined'
     exclude = ('gender',)
+    inlines = [APIBookInline, ]
 
     @admin.display(description='is this author old enough')
     def is_old_enough(self, obj):
