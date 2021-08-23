@@ -573,19 +573,16 @@ class InlineAdminListView(APIView):
         queryset = inline_admin.get_queryset(request)
         page = inline_admin.admin_site.paginate_queryset(queryset, request, view=self)
         serializer = self.serializer_class(page, many=True)
+        data = serializer.data
 
         info = (
             inline_admin.admin_site.name, inline_admin.parent_model._meta.app_label,
             inline_admin.parent_model._meta.model_name, inline_admin.opts.app_label,
             inline_admin.opts.model_name
         )
-
-        data = serializer.data
-
         for item in data:
             item['detail_url'] = reverse('%s:%s_%s_%s_%s_detail' % info, kwargs={'object_id': int(item['pk'])},
                                          request=request)
-
         return Response(data, status=status.HTTP_200_OK)
 
 
@@ -593,5 +590,38 @@ class InlineAdminDetailView(APIView):
     permission_classes = []
     serializer_class = None
 
-    def get(self, request, inline_admin):
+    def get(self, request, object_id, inline_admin):
+        queryset = inline_admin.get_queryset(request)
+        model = queryset.model
+        try:
+            obj = queryset.get(pk=unquote(object_id))
+        except model.DoesNotExist:
+            raise NotFound
+
+        serializer = self.serializer_class(obj)
+        data = serializer.data
+
+        info = (
+            inline_admin.admin_site.name, inline_admin.parent_model._meta.app_label,
+            inline_admin.parent_model._meta.model_name, inline_admin.opts.app_label,
+            inline_admin.opts.model_name
+        )
+        data['delete_url'] = reverse('%s:%s_%s_%s_%s_delete' % info, kwargs={'object_id': data['pk']}, request=request)
+        data['change_url'] = reverse('%s:%s_%s_%s_%s_change' % info, kwargs={'object_id': data['pk']}, request=request)
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class InlineAdminDeleteView(APIView):
+    def delete(self, request, object_id):
+        pass
+
+    def post(self, *args, **kwargs):
+        return self.delete(*args, **kwargs)
+
+
+class InlineAdminChangeView(APIView):
+    def put(self, request):
+        pass
+
+    def patch(self, request):
         pass

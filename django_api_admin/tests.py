@@ -479,3 +479,9 @@ class InlineModelAdminTestCase(APITestCase, URLPatternsTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['title'], 'Easy way to stop smoking')
+
+    def test_inline_detail_view(self):
+        url = reverse('api_admin:%s_%s_%s_%s_detail' % self.book_info, kwargs={'object_id': 1})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['title'], 'High performance django')

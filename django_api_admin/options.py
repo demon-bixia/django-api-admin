@@ -261,8 +261,8 @@ class InlineAPIModelAdmin(BaseAPIModelAdmin, InlineModelAdmin):
             path('list/', admin_view(self.list_view), name='%s_%s_%s_%s_list' % info),
             # path('add/', admin_view(self.add_view), name='%s_%s_%s_%s_add' % info),
             path('<path:object_id>/detail/', admin_view(self.detail_view), name='%s_%s_%s_%s_detail' % info),
-            # path('<path:object_id>/change/', admin_view(self.change_view), name='%s_%s_%s_%s_change' % info),
-            # path('<path:object_id>/delete/', admin_view(self.delete_view), name='%s_%s_%s_%s_delete' % info),
+            path('<path:object_id>/change/', admin_view(self.change_view), name='%s_%s_%s_%s_change' % info),
+            path('<path:object_id>/delete/', admin_view(self.delete_view), name='%s_%s_%s_%s_delete' % info),
         ]
 
     @property
@@ -276,12 +276,26 @@ class InlineAPIModelAdmin(BaseAPIModelAdmin, InlineModelAdmin):
         }
         return api_views.InlineAdminListView.as_view(**defaults)(request, self)
 
-    def detail_view(self, request):
+    def detail_view(self, request, object_id):
         defaults = {
             'serializer_class': self.get_serializer_class(request),
             'permission_classes': self.admin_site.default_permission_classes,
         }
-        return api_views.InlineAdminDetailView.as_view(**defaults)(request, self)
+        return api_views.InlineAdminDetailView.as_view(**defaults)(request, object_id, self)
+
+    def delete_view(self, request, object_id):
+        defaults = {
+            'serializer_class': self.get_serializer_class(request),
+            'permission_classes': self.admin_site.default_permission_classes,
+        }
+        return api_views.InlineAdminDeleteView.as_view(**defaults)(request, object_id, self)
+
+    def change_view(self, request, object_id):
+        defaults = {
+            'serializer_class': self.get_serializer_class(request),
+            'permission_classes': self.admin_site.default_permission_classes,
+        }
+        return api_views.InlineAdminChangeView.as_view(**defaults)(request, object_id, self)
 
 
 class TabularInlineAPI(InlineAPIModelAdmin):
