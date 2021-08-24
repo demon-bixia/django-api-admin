@@ -10,6 +10,11 @@ class APIBookInline(TabularInlineAPI):
     model = Book
 
 
+@admin.register(Publisher, site=site)
+class PublisherAPIAdmin(APIModelAdmin):
+    search_fields = ('name',)
+
+
 # register in api_admin_site
 @admin.register(Author, site=site)
 class AuthorAPIAdmin(APIModelAdmin):
@@ -29,11 +34,6 @@ class AuthorAPIAdmin(APIModelAdmin):
     @admin.display(description='is this author old enough')
     def is_old_enough(self, obj):
         return obj.age > 10
-
-
-@admin.register(Publisher, site=site)
-class PublisherAPIAdmin(APIModelAdmin):
-    search_fields = ('name',)
 
 
 # register in default admin site

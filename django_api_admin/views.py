@@ -383,9 +383,8 @@ class AddView(APIView):
 
             if admin.is_inline:
                 parent_model = admin.parent_model
-                parent_object = parent_model.objects.get(**{new_object._meta.verbose_name: new_object})
+                change_object = parent_model.objects.get(**{new_object._meta.verbose_name: new_object})
                 model_admin = admin.admin_site._registry.get(parent_model)
-                change_object = parent_object
             else:
                 model_admin = admin
                 change_object = new_object
@@ -413,27 +412,30 @@ class ChangeView(APIView):
             return self.serializer_class(instance=obj, data=request.data, partial=True)
         return self.serializer_class(instance=obj, data=request.data)
 
-    def update(self, request, object_id, model_admin):
-        # validate the reverse to field reference
-        to_field = request.query_params.get(TO_FIELD_VAR)
-        if to_field and not model_admin.to_field_allowed(request, to_field):
-            return Response({'detail': 'The field %s cannot be referenced.' % to_field},
-                            status=status.HTTP_400_BAD_REQUEST)
+    def update(self, request, object_id, admin):
+        if not admin.is_inline:
+            # validate the reverse to field reference
+            to_field = request.query_params.get(TO_FIELD_VAR)
+            if to_field and not admin.to_field_allowed(request, to_field):
+                return Response({'detail': 'The field %s cannot be referenced.' % to_field},
+                                status=status.HTTP_400_BAD_REQUEST)
+            obj = admin.get_object(request, unquote(object_id), to_field)
+        else:
+            obj = admin.get_object(request, unquote(object_id))
 
-        obj = model_admin.get_object(request, unquote(object_id), to_field)
-        opts = model_admin.model._meta
+        opts = admin.model._meta
         helper = ModelDiffHelper(obj)
 
         # if the object doesn't exist respond with not found
         if obj is None:
             msg = _("%(name)s with ID “%(key)s” doesn't exist. Perhaps it was deleted?") % {
-                'name': model_admin.model._meta.verbose_name,
+                'name': admin.model._meta.verbose_name,
                 'key': unquote(object_id),
             }
             return Response({'detail': msg}, status=status.HTTP_404_NOT_FOUND)
 
         # test user change permission in this model.
-        if not model_admin.has_change_permission(request, obj):
+        if not admin.has_change_permission(request, obj):
             raise PermissionDenied
 
         # initiate the serializer based on the request method
@@ -441,14 +443,23 @@ class ChangeView(APIView):
 
         # if the method is get return the change form fields dictionary
         if request.method == 'GET':
-            form_fields = model_admin.get_form_fields(serializer, change=True)
+            form_fields = admin.get_form_fields(serializer, change=True)
             return Response({'form': {'fields': form_fields}}, status=status.HTTP_200_OK)
 
         # update and log the changes to the object
         if serializer.is_valid():
             updated_object = serializer.save()
+
+            if admin.is_inline:
+                parent_model = admin.parent_model
+                model_admin = admin.admin_site._registry.get(parent_model)
+                changed_object = parent_model.objects.get(**{updated_object._meta.verbose_name: updated_object})
+            else:
+                model_admin = admin
+                changed_object = updated_object
+
             # log the change of  change
-            model_admin.log_change(request, updated_object, [{'changed': {
+            model_admin.log_change(request, changed_object, [{'changed': {
                 'name': str(updated_object._meta.verbose_name),
                 'object': str(updated_object),
                 'fields': helper.set_changed_model(updated_object).changed_fields
@@ -458,14 +469,14 @@ class ChangeView(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def put(self, request, object_id, model_admin):
-        return self.update(request, object_id, model_admin)
+    def put(self, request, object_id, admin):
+        return self.update(request, object_id, admin)
 
-    def patch(self, request, object_id, model_admin):
-        return self.update(request, object_id, model_admin)
+    def patch(self, request, object_id, admin):
+        return self.update(request, object_id, admin)
 
-    def get(self, request, object_id, model_admin):
-        return self.update(request, object_id, model_admin)
+    def get(self, request, object_id, admin):
+        return self.update(request, object_id, admin)
 
 
 class DeleteView(APIView):

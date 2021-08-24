@@ -509,3 +509,29 @@ class InlineModelAdminTestCase(APITestCase, URLPatternsTestCase):
         })
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.data['title'][0].code, 'required')
+
+    def test_inline_change_view(self):
+        # valid change
+        url = reverse('api_admin:%s_%s_%s_%s_change' % self.book_info, kwargs={'object_id': 1})
+        response = self.client.patch(url, data={
+            'title': 'outgrowing god',
+            'author': self.a2.pk
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['book']['title'], 'outgrowing god')
+        self.assertEqual(response.data['book']['author'], self.a2.pk)
+
+        # change being logged
+        url = reverse('api_admin:%s_%s_history' % self.author_info, kwargs={'object_id': self.a2.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        change_message = json.loads(response.data[0]['change_message'])
+        self.assertTrue(change_message[0]['changed']['object'] == 'outgrowing god')
+
+        # invalid change
+        url = reverse('api_admin:%s_%s_%s_%s_change' % self.book_info, kwargs={'object_id': 1})
+        response = self.client.put(url, data={
+            'author': self.a2.pk
+        })
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data['title'][0].code, 'required')
