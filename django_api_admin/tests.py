@@ -535,3 +535,12 @@ class InlineModelAdminTestCase(APITestCase, URLPatternsTestCase):
         })
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.data['title'][0].code, 'required')
+
+    def test_inline_delete_view(self):
+        url = reverse('api_admin:%s_%s_%s_%s_delete' % self.book_info, kwargs={'object_id': 3})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 200)
+        try:
+            Book.objects.get(id=3)
+        except Book.DoesNotExist:
+            assert True

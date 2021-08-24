@@ -485,17 +485,19 @@ class DeleteView(APIView):
     """
     permission_classes = []
 
-    def delete(self, request, object_id, model_admin):
-        opts = model_admin.model._meta
+    def delete(self, request, object_id, admin):
+        opts = admin.model._meta
 
-        # validate the reverse to field reference.
-        to_field = request.query_params.get(TO_FIELD_VAR)
-        if to_field and not model_admin.to_field_allowed(request, to_field):
-            return Response({'detail': 'The field %s cannot be referenced.' % to_field},
-                            status=status.HTTP_400_BAD_REQUEST)
+        if not admin.is_inline:
+            # validate the reverse to field reference.
+            to_field = request.query_params.get(TO_FIELD_VAR)
+            if to_field and not admin.to_field_allowed(request, to_field):
+                return Response({'detail': 'The field %s cannot be referenced.' % to_field},
+                                status=status.HTTP_400_BAD_REQUEST)
+            obj = admin.get_object(request, unquote(object_id), to_field)
+        else:
+            obj = admin.get_object(request, unquote(object_id))
 
-        # get the object to be deleted.
-        obj = model_admin.get_object(request, unquote(object_id), to_field)
         if obj is None:
             msg = _("%(name)s with ID “%(key)s” doesn't exist. Perhaps it was deleted?") % {
                 'name': opts.verbose_name,
@@ -504,14 +506,16 @@ class DeleteView(APIView):
             return Response({'detail': msg}, status=status.HTTP_404_NOT_FOUND)
 
         # check delete object permission
-        if not model_admin.has_delete_permission(request, obj):
+        if not admin.has_delete_permission(request, obj):
             raise PermissionDenied
+
+        model_admin = admin if not admin.is_inline else admin.admin_site._registry.get(admin.parent_model)
 
         # log deletion
         model_admin.log_deletion(request, obj, str(obj))
 
         # delete the object
-        model_admin.delete_model(request, obj)
+        obj.delete()
 
         return Response({'detail': _('The %(name)s “%(obj)s” was deleted successfully.') % {
             'name': opts.verbose_name,
