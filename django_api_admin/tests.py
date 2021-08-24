@@ -544,3 +544,8 @@ class InlineModelAdminTestCase(APITestCase, URLPatternsTestCase):
             Book.objects.get(id=3)
         except Book.DoesNotExist:
             assert True
+
+    def test_inline_context_view(self):
+        url = reverse('api_admin:%s_%s_%s_%s_context' % self.book_info)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
