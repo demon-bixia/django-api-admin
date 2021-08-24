@@ -1,7 +1,4 @@
-"""
-    Test Models
-"""
-
+"""Test Models"""
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.urls import reverse
@@ -38,4 +35,4 @@ class Book(models.Model):
     author = models.ForeignKey(Author, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"{self.title} by {self.author}"
+        return self.title

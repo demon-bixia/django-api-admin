@@ -389,7 +389,7 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
         url = reverse('api_admin:%s_%s_history' % self.author_info, kwargs={'object_id': author_id})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(len(response.data) > 0)
+        self.assertEqual(response.data[0]['object_repr'], 'test4')
 
     def test_change_view(self):
         author = Author.objects.create(name='hassan', age=60, is_vip=False, user_id=self.user.pk)
@@ -485,3 +485,27 @@ class InlineModelAdminTestCase(APITestCase, URLPatternsTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['title'], 'High performance django')
+
+    def test_inline_add_view(self):
+        # valid request
+        url = reverse('api_admin:%s_%s_%s_%s_add' % self.book_info)
+        response = self.client.post(url, data={
+            'title': 'The selfish gene',
+            'author': self.a2.pk
+        })
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data['book']['title'], 'The selfish gene')
+
+        # test logging
+        url = reverse('api_admin:%s_%s_history' % self.author_info, kwargs={'object_id': self.a2.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data[0]['object_repr'] == 'Richard Dawkins')
+
+        # invalid data
+        url = reverse('api_admin:%s_%s_%s_%s_add' % self.book_info)
+        response = self.client.post(url, data={
+            'author': self.a2.pk
+        })
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data['title'][0].code, 'required')

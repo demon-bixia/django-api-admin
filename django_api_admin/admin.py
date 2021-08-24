@@ -41,6 +41,10 @@ class BookInline(admin.TabularInline):
     model = Book
 
 
+class PublisherAdmin(admin.ModelAdmin):
+    search_fields = ('name',)
+
+
 class AuthorAdmin(admin.ModelAdmin):
     list_display = ('name', 'age', 'is_a_vip', 'user', 'gender')
     list_filter = ('is_vip', 'age')
@@ -56,15 +60,11 @@ class AuthorAdmin(admin.ModelAdmin):
     exclude = ('gender',)
     date_hierarchy = 'date_joined'
 
-    inlines = [BookInline, ]
+    inlines = [BookInline]
 
     @admin.display(description='is this author a vip')
     def is_a_vip(self, obj):
         return obj.is_vip
-
-
-class PublisherAdmin(admin.ModelAdmin):
-    search_fields = ('name',)
 
 
 admin.site.register(Author, AuthorAdmin)

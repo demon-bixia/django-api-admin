@@ -365,23 +365,33 @@ class AddView(APIView):
     permission_classes = []
 
     # todo add form context to add/change view get methods
-    def get(self, request, model_admin):
+    def get(self, request, admin):
         serializer = self.serializer_class()
-        form_fields = model_admin.get_form_fields(serializer)
+        form_fields = admin.get_form_fields(serializer)
         return Response({'form': {'fields': form_fields}}, status=status.HTTP_200_OK)
 
-    def post(self, request, model_admin):
+    def post(self, request, admin):
         # if the user doesn't have add permission respond with permission denied
-        if not model_admin.has_add_permission(request):
+        if not admin.has_add_permission(request):
             raise PermissionDenied
 
         # validate data and send
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            opts = model_admin.model._meta
+            opts = admin.model._meta
             new_object = serializer.save()
+
+            if admin.is_inline:
+                parent_model = admin.parent_model
+                parent_object = parent_model.objects.get(**{new_object._meta.verbose_name: new_object})
+                model_admin = admin.admin_site._registry.get(parent_model)
+                change_object = parent_object
+            else:
+                model_admin = admin
+                change_object = new_object
+
             # log addition of the new instance
-            model_admin.log_addition(request, new_object, [{'added': {
+            model_admin.log_addition(request, change_object, [{'added': {
                 'name': str(new_object._meta.verbose_name),
                 'object': str(new_object),
             }}])
