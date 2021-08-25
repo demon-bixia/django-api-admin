@@ -175,7 +175,7 @@ class APIAdminSite(AdminSite):
                 'list_url': None,
                 'changelist_url': None,
                 'add_url': None,
-                'admin_context': None,
+                'admin_context_url': None,
                 'perform_action_url': None,
             }
 
@@ -184,7 +184,7 @@ class APIAdminSite(AdminSite):
                 try:
                     model_dict['list_url'] = request.build_absolute_uri(
                         reverse('%s:%s_%s_list' % info, current_app=self.name))
-                    model_dict['admin_context'] = request.build_absolute_uri(
+                    model_dict['admin_context_url'] = request.build_absolute_uri(
                         reverse('%s:%s_%s_context' % info, current_app=self.name))
                     model_dict['changelist_url'] = request.build_absolute_uri(
                         reverse('%s:%s_%s_changelist' % info, current_app=self.name))

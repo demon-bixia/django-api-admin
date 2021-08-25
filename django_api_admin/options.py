@@ -4,6 +4,7 @@ from django.contrib.auth import get_permission_codename
 from django.db import transaction, router
 from django.db.models import Model
 from rest_framework import serializers
+from rest_framework.reverse import reverse
 
 from django_api_admin.serializers import ActionSerializer
 from . import views as api_views
@@ -65,35 +66,36 @@ class BaseAPIModelAdmin:
         })
 
     def get_form_fields(self, serializer, change=False):
-        form_fields = []
+        form_fields = dict()
 
         # loop all serializer fields
         for name, field in serializer.fields.items():
-            # create a field dict with name of the field and it's type
-            # (i.e 'name': 'username', 'type': 'CharField', 'attrs': {'max_length': 50, ...})
-            form_field = {'name': name, 'type': type(field).__name__, 'attrs': {}}
+            # don't create a form field for the pk field
+            if not name == 'pk':
+                # create a field dict with name of the field and it's type
+                # (i.e 'name': 'username', 'type': 'CharField', 'attrs': {'max_length': 50, ...})
+                form_field = {'type': type(field).__name__, 'attrs': {}}
 
-            for attr_name in self.serializer_field_attributes:
-                attr = getattr(field, attr_name, None)
-                # if the attribute is an empty field use null
-                if attr_name == 'default' and attr.__name__ == 'empty':
-                    value = None
-                # if the attribute is a callable then call it and pass field to it
-                elif callable(attr):
-                    value = attr(field)
-                else:
-                    # if it's a primitive value just use it
-                    value = attr
-                form_field['attrs'][attr_name] = value
+                for attr_name in self.serializer_field_attributes:
+                    attr = getattr(field, attr_name, None)
+                    # if the attribute is an empty field use null
+                    if attr_name == 'default' and attr.__name__ == 'empty':
+                        value = None
+                    # if the attribute is a callable then call it and pass field to it
+                    elif callable(attr):
+                        value = attr(field)
+                    else:
+                        # if it's a primitive value just use it
+                        value = attr
+                    form_field['attrs'][attr_name] = value
 
-            if change:
-                current_value = getattr(serializer.instance, name)
-                if isinstance(current_value, Model):
-                    current_value = current_value.pk
-                form_field['attrs']['current_value'] = current_value
+                if change:
+                    current_value = getattr(serializer.instance, name)
+                    if isinstance(current_value, Model):
+                        current_value = current_value.pk
+                    form_field['attrs']['current_value'] = current_value
 
-            form_fields.append(form_field)
-
+                form_fields[name] = form_field
         return form_fields
 
     def get_permission_map(self, request, obj=None):
@@ -188,7 +190,6 @@ class BaseAPIModelAdmin:
             return api_views.DeleteView.as_view(**defaults)(request, object_id, self, **kwargs)
 
 
-# todo test APIModelAdmin get_form_fields views
 class APIModelAdmin(BaseAPIModelAdmin, ModelAdmin):
     """
     exposes django.contrib.admin.options.ModelAdmin as a restful api.
@@ -222,6 +223,21 @@ class APIModelAdmin(BaseAPIModelAdmin, ModelAdmin):
             choices.append((f'{item.pk}', f'{str(item)}'))
         return choices
 
+    def get_inlines_list(self, request):
+        inlines_list = list()
+        inlines = self.get_inline_instances(request)
+        for inline_admin in inlines:
+            urls = {}
+            info = (inline_admin.admin_site.name, inline_admin.parent_model._meta.app_label,
+                    inline_admin.parent_model._meta.model_name,
+                    inline_admin.opts.app_label, inline_admin.opts.model_name)
+            urls['context_url'] = reverse('%s:%s_%s_%s_%s_context' % info, request=request)
+            urls['list_url'] = reverse('%s:%s_%s_%s_%s_list' % info, request=request)
+            urls['add_url'] = reverse('%s:%s_%s_%s_%s_add' % info, request=request)
+
+            inlines_list.append({'name': inline_admin.__class__.__name__, 'urls': urls})
+        return inlines_list
+
     def get_urls(self):
         from django.urls import path, include
 
@@ -241,7 +257,6 @@ class APIModelAdmin(BaseAPIModelAdmin, ModelAdmin):
         ]
 
         # add inline admins urls
-        # todo include inline urls in browsable api
         for inline_class in self.inlines:
             inline = inline_class(self.model, self.admin_site)
             opts = inline.model._meta
@@ -271,7 +286,6 @@ class APIModelAdmin(BaseAPIModelAdmin, ModelAdmin):
         return api_views.HistoryView.as_view(**defaults)(request, object_id, self)
 
 
-# todo test inline model admin views and permissions
 class InlineAPIModelAdmin(BaseAPIModelAdmin, InlineModelAdmin):
     """
     Edit models connected with a relationship in one page

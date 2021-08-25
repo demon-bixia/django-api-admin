@@ -198,10 +198,13 @@ class AdminContextView(APIView):
     """
     permission_classes = []
 
-    def get(self, request, model_admin):
-        options_dict = model_admin.get_admin_options(request)
-        permission_map = model_admin.get_permission_map(request)
-        return Response({'options': options_dict, 'permission_map': permission_map}, status=status.HTTP_200_OK)
+    def get(self, request, admin):
+        data = dict()
+        if not admin.is_inline:
+            data['inlines'] = admin.get_inlines_list(request)
+        data['permission_map'] = admin.get_permission_map(request)
+        data['options'] = admin.get_admin_options(request)
+        return Response(data, status=status.HTTP_200_OK)
 
 
 class ChangeListView(APIView):
@@ -352,6 +355,7 @@ class DetailView(APIView):
             )
             pattern = '%s:%s_%s_%s_%s_'
 
+        data['list_url'] = reverse((pattern + 'list') % info, request=request)
         data['delete_url'] = reverse((pattern + 'delete') % info, kwargs={'object_id': data['pk']}, request=request)
         data['change_url'] = reverse((pattern + 'change') % info, kwargs={'object_id': data['pk']}, request=request)
         return Response(data, status=status.HTTP_200_OK)
@@ -364,7 +368,6 @@ class AddView(APIView):
     serializer_class = None
     permission_classes = []
 
-    # todo add form context to add/change view get methods
     def get(self, request, admin):
         serializer = self.serializer_class()
         form_fields = admin.get_form_fields(serializer)

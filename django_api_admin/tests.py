@@ -549,3 +549,15 @@ class InlineModelAdminTestCase(APITestCase, URLPatternsTestCase):
         url = reverse('api_admin:%s_%s_%s_%s_context' % self.book_info)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+
+    def test_inline_form_fields(self):
+        url = reverse('api_admin:%s_%s_%s_%s_add' % self.book_info)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data['form']['fields']), 2)
+
+        url = reverse('api_admin:%s_%s_%s_%s_change' % self.book_info, kwargs={'object_id': 1})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data['form']['fields']), 2)
+        self.assertEqual(response.data['form']['fields']['title']['attrs']['current_value'], 'High performance django')
