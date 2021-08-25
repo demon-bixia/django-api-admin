@@ -191,7 +191,7 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
     def test_view_on_site_view(self):
         if site.include_view_on_site_view:
             # create an author
-            Author.objects.create(name='muhammad')
+            Author.objects.create(name='muhammad', user=self.user)
 
             # test if view_on_site view works
             content_type_id = ContentType.objects.get(app_label='django_api_admin', model='author').id
@@ -200,6 +200,12 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
             response = self.client.get(url)
             self.assertEqual(response.status_code, 302)
             self.assertEqual(response.get('location'), 'http://testserver/author/1/')
+            url = response.get('location')
+            # test the detail view
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 200)
+            author = json.loads(response.content)
+            self.assertEqual(author['name'], 'muhammad')
 
     def test_api_root_view(self):
         if site.include_root_view:

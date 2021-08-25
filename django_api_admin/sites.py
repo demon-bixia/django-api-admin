@@ -27,7 +27,7 @@ class APIAdminSite(AdminSite):
     admin_class = APIModelAdmin
 
     # optional views
-    include_view_on_site_view = False
+    include_view_on_site_view = True
     include_root_view = True
 
     # default permissions
@@ -36,7 +36,6 @@ class APIAdminSite(AdminSite):
     # default serializers
     login_serializer = api_serializers.LoginSerializer
     password_change_serializer = api_serializers.PasswordChangeSerializer
-    user_serializer = api_serializers.UserSerializer
     log_entry_serializer = api_serializers.LogEntrySerializer
 
     # default result pagination style
@@ -239,14 +238,12 @@ class APIAdminSite(AdminSite):
         defaults = {
             'permission_classes': self.default_permission_classes,
             'serializer_class': self.login_serializer,
-            'user_serializer_class': self.user_serializer,
         }
         return api_views.LoginView.as_view(**defaults)(request)
 
     def logout(self, request, extra_context=None):
         defaults = {
             'permission_classes': self.default_permission_classes,
-            'user_serializer_class': self.user_serializer,
         }
         return api_views.LogoutView.as_view(**defaults)(request)
 

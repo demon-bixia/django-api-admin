@@ -209,6 +209,7 @@ class APIModelAdmin(BaseAPIModelAdmin, ModelAdmin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.admin_class_options += super().admin_class_options
+        self.view_on_site = False if not self.admin_site.include_view_on_site_view else self.view_on_site
 
     def get_action_serializer(self, request):
         return type('%sActionSerializer' % self.__class__.__name__, (ActionSerializer,), {

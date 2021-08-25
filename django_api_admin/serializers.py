@@ -55,17 +55,6 @@ class LoginSerializer(serializers.Serializer):
         return self.user_cache
 
 
-class UserSerializer(serializers.ModelSerializer):
-    """
-    default AUTH_USER_MODEL serializer.
-    """
-
-    class Meta:
-        model = UserModel
-        fields = '__all__'
-        extra_kwargs = {'password': {'write_only': True}}
-
-
 class LogEntrySerializer(serializers.ModelSerializer):
     """
     default django.contrib.admin.models.LogEntry serializer.

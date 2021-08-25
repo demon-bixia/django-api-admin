@@ -2,6 +2,7 @@ from django.contrib.admin.options import IncorrectLookupParameters, TO_FIELD_VAR
 from django.contrib.admin.utils import label_for_field, lookup_field, unquote
 from django.contrib.admin.views.autocomplete import AutocompleteJsonView
 from django.contrib.auth import login, logout
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Model
 from django.utils.translation import gettext_lazy as _
@@ -21,16 +22,14 @@ class LoginView(APIView):
     Allow users to login using username and password
     """
     serializer_class = None
-    user_serializer_class = None
     permission_classes = []
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data, context={'request': request})
         if serializer.is_valid():
             login(request, serializer.get_user())
-            user_serializer = self.user_serializer_class(request.user)
             msg = _('you are logged in successfully')
-            return Response({'user': user_serializer.data, 'detail': msg},
+            return Response({'detail': msg},
                             status=status.HTTP_200_OK)
 
         for error in serializer.errors.get('non_field_errors', []):
@@ -44,14 +43,12 @@ class LogoutView(APIView):
     """
     Logout and display a 'your are logged out ' message.
     """
-    user_serializer_class = None
     permission_classes = []
 
     def post(self, request):
-        user_serializer = self.user_serializer_class(request.user)
         message = _("You are logged out.")
         logout(request)
-        return Response({'user': user_serializer.data, 'detail': message},
+        return Response({'detail': message},
                         status=status.HTTP_200_OK)
 
     def get(self, *args, **kwargs):
@@ -84,18 +81,14 @@ class IndexView(APIView):
 
     def get(self, request, admin_site):
         app_list = admin_site.get_app_list(request)
-
         # add a url to app_index in every app in app_list
         for app in app_list:
             url = reverse(f'{admin_site.name}:app_list', kwargs={'app_label': app['app_label']}, request=request)
             app['url'] = url
-
         data = {
             'app_list': app_list,
         }
-
         request.current_app = admin_site.name
-
         return Response(data, status=status.HTTP_200_OK)
 
 
@@ -200,10 +193,10 @@ class AdminContextView(APIView):
 
     def get(self, request, admin):
         data = dict()
-        if not admin.is_inline:
-            data['inlines'] = admin.get_inlines_list(request)
         data['permission_map'] = admin.get_permission_map(request)
         data['options'] = admin.get_admin_options(request)
+        if not admin.is_inline:
+            data['inlines'] = admin.get_inlines_list(request)
         return Response(data, status=status.HTTP_200_OK)
 
 
@@ -338,6 +331,7 @@ class DetailView(APIView):
         serializer = self.serializer_class(obj)
         data = serializer.data
 
+        # add admin urls.
         if not admin.is_inline:
             info = (
                 admin.admin_site.name,
@@ -347,6 +341,12 @@ class DetailView(APIView):
             pattern = '%s:%s_%s_'
             data['history_url'] = reverse((pattern + 'history') % info, kwargs={'object_id': data['pk']},
                                           request=request)
+            if admin.view_on_site:
+                model_type = ContentType.objects.get(app_label=admin.opts.app_label,
+                                                     model=admin.model._meta.verbose_name)
+                data['view_on_site'] = reverse('%s:view_on_site' % admin.admin_site.name,
+                                               kwargs={'content_type_id': model_type.pk, 'object_id': obj.pk},
+                                               request=request)
         else:
             info = (
                 admin.admin_site.name, admin.parent_model._meta.app_label,
