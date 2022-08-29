@@ -2,26 +2,33 @@ from django.contrib.admin.models import LogEntry
 from django.contrib.auth import get_user_model, authenticate
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
+from pathlib import Path
 
 UserModel = get_user_model()
 
 
-# noinspection PyAbstractClass
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserModel
+        exclude = ('password',)
+
+
 class LoginSerializer(serializers.Serializer):
     """
-    Validates login credentials.
+    Validates login credentials and generates token.
     """
-    password = serializers.CharField(label='Password', write_only=True, required=True,
-                                     style={'input_type': 'password'})
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.user_cache = None
-
         # create the username field
         username_field = UserModel._meta.get_field(UserModel.USERNAME_FIELD)
-        self.username = serializers.ModelSerializer.serializer_field_mapping[username_field.__class__](required=True)
+        self.username = serializers.ModelSerializer.serializer_field_mapping[username_field.__class__](
+            max_length=username_field.max_length, required=True)
         self._declared_fields[UserModel.USERNAME_FIELD] = self.username
+        self.password = serializers.CharField(label='Password', write_only=True, required=True,
+                                              style={'input_type': 'password'}, max_length=80, min_length=7)
+        self._declared_fields['password'] = self.password
 
         # add the custom error messages to self.error_messages
         self.error_messages.update({
@@ -41,17 +48,23 @@ class LoginSerializer(serializers.Serializer):
         request = self.context.get('request')
 
         if username is not None and password:
-            self.user_cache = authenticate(request, username=username, password=password)
+            self.user_cache = authenticate(
+                request, username=username, password=password)
             if self.user_cache is None:
-                raise serializers.ValidationError(self.error_messages['invalid_login'], code='invalid_login')
+                raise serializers.ValidationError(
+                    self.error_messages['invalid_login'], code='invalid_login')
             elif not self.user_cache.is_staff:
                 raise serializers.ValidationError(self.error_messages['permission_denied'],
                                                   code='permission_denied')
             elif not self.user_cache.is_active:
-                raise serializers.ValidationError(self.error_messages['inactive'], code='inactive')
+                raise serializers.ValidationError(
+                    self.error_messages['inactive'], code='inactive')
         return data
 
     def get_user(self):
+        if not hasattr(self, '_validated_data'):
+            raise AssertionError(
+                'You must call is valid before calling get_user')
         return self.user_cache
 
 
@@ -65,7 +78,6 @@ class LogEntrySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-# noinspection PyAbstractClass
 class PasswordChangeSerializer(serializers.Serializer):
     """
     Allow changing password by entering the old_password and a new one.
@@ -115,7 +127,6 @@ class PasswordChangeSerializer(serializers.Serializer):
         return user
 
 
-# noinspection PyAbstractClass
 class ActionSerializer(serializers.Serializer):
     """
     checks that a valid action is selected

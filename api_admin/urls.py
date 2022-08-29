@@ -1,23 +1,14 @@
-"""api_admin URL Configuration
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/3.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import path
-from django_api_admin.sites import site
+from django_api_admin.admin import site
+from django_api_admin import test_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api_admin/', site.urls),
+    path('api_admin/test/<str:test_name>/', test_views.TestView.as_view()),
+    path('api_admin/test/test_detail/<pk>/',
+         test_views.TestDetailView.as_view(), name="test-detail"),
+    path('api_admin/test/test_detail/<pk>/<format>/',
+         test_views.TestDetailView.as_view(), name="test-detail")
 ]

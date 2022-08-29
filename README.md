@@ -1,5 +1,3 @@
-# django-api-admin
-
 Expose django.contrib.admin as a restful service. useful for adding new features to django admin or writing a new admin.
 
 ## Features ⚡
@@ -14,7 +12,7 @@ Expose django.contrib.admin as a restful service. useful for adding new features
 
 ## Requirements 📄
 
-<p>Python 3.7+</p>
+<p>Python 3.9+</p>
 <p>This package depends on</p>
 <ul>
     <li><a href="https://github.com/encode/django-rest-framework">django-rest-framework</a></li>

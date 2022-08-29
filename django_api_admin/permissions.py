@@ -4,8 +4,6 @@ from rest_framework import permissions
 class IsAdminUser(permissions.BasePermission):
 
     def has_permission(self, request, view):
-        if view.get_view_name() == 'Login':
-            return True
         return self.is_superuser(request)
 
     def is_superuser(self, request):

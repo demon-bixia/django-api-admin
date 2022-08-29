@@ -5,6 +5,7 @@ from rest_framework.test import APITestCase, URLPatternsTestCase
 from .admin import site
 from .models import Person
 
+
 site.register(Person)
 UserModel = get_user_model()
 
@@ -34,7 +35,8 @@ class CustomAPITestCase(APITestCase, URLPatternsTestCase):
 
     def test_app_index_view(self):
         # test if the app index view works in a custom admin site
-        url = reverse(f'{site.name}:app_list', kwargs={'app_label': Person._meta.app_label})
+        url = reverse(f'{site.name}:app_list', kwargs={
+                      'app_label': Person._meta.app_label})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 

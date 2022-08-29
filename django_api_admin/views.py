@@ -1,10 +1,16 @@
-from django.contrib.admin.options import IncorrectLookupParameters, TO_FIELD_VAR, get_content_type_for_model
+import json
+
+from django.contrib.admin.options import (TO_FIELD_VAR,
+                                          IncorrectLookupParameters,
+                                          get_content_type_for_model)
 from django.contrib.admin.utils import label_for_field, lookup_field, unquote
 from django.contrib.admin.views.autocomplete import AutocompleteJsonView
 from django.contrib.auth import login, logout
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import FieldDoesNotExist, ObjectDoesNotExist
 from django.db.models import Model
+from django.http import JsonResponse
+from django.middleware.csrf import get_token
 from django.utils.translation import gettext_lazy as _
 from django.views.i18n import JSONCatalog
 from rest_framework import status
@@ -13,46 +19,69 @@ from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.views import APIView
 
-from .utils import ModelDiffHelper
+from .utils import ModelDiffHelper, get_form_fields
 
 
-# admin-site-wide views
+class CsrfTokenView(APIView):
+    serializer_class = None
+    permission_classes = []
+
+    def get(self, request):
+        return Response({'csrftoken': get_token(request)})
+
+
+class UserInformation(APIView):
+    serializer_class = None
+    permission_classes = []
+
+    def get(self, request):
+        serializer = self.serializer_class(request.user)
+        return Response({'user': serializer.data})
+
+
 class LoginView(APIView):
     """
-    Allow users to login using username and password
+    Allow users to login using username and password.
     """
     serializer_class = None
     permission_classes = []
 
-    def post(self, request):
-        serializer = self.serializer_class(data=request.data, context={'request': request})
+    def get(self, request, admin_site):
+        serializer = self.serializer_class()
+        form_fields = get_form_fields(serializer)
+        return Response({'fields': form_fields}, status=status.HTTP_200_OK)
+
+    def post(self, request, admin_site):
+        serializer = self.serializer_class(
+            data=request.data, context={'request': request})
         if serializer.is_valid():
-            login(request, serializer.get_user())
-            msg = _('you are logged in successfully')
-            return Response({'detail': msg},
-                            status=status.HTTP_200_OK)
+            user = serializer.get_user()
+            login(request, user)
+            user_serializer = admin_site.user_serializer(user)
+            data = {
+                'detail': _('you are logged in successfully'),
+                'user': user_serializer.data
+            }
+            return Response(data, status=status.HTTP_200_OK)
 
         for error in serializer.errors.get('non_field_errors', []):
             if error.code == 'permission_denied':
                 return Response(serializer.errors, status=status.HTTP_403_FORBIDDEN)
-
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class LogoutView(APIView):
     """
-    Logout and display a 'your are logged out ' message.
+    Logout and display a 'you are logged out ' message.
     """
     permission_classes = []
 
     def post(self, request):
-        message = _("You are logged out.")
         logout(request)
-        return Response({'detail': message},
-                        status=status.HTTP_200_OK)
+        return Response({"detail": _("You are logged out.")}, status=status.HTTP_200_OK)
 
-    def get(self, *args, **kwargs):
-        return self.post(*args, **kwargs)
+    def get(self, request):
+        return self.post(request)
 
 
 class PasswordChangeView(APIView):
@@ -64,7 +93,8 @@ class PasswordChangeView(APIView):
 
     def post(self, request):
         serializer_class = self.serializer_class
-        serializer = serializer_class(data=request.data, context={'user': request.user})
+        serializer = serializer_class(
+            data=request.data, context={'user': request.user})
         if serializer.is_valid():
             serializer.save()
             return Response({'detail': _('Your password was changed')},
@@ -74,16 +104,17 @@ class PasswordChangeView(APIView):
 
 class IndexView(APIView):
     """
-    Return json object that lists all of the installed
+    Return json object that lists all the installed
     apps that have been registered by the admin site.
     """
     permission_classes = []
 
     def get(self, request, admin_site):
         app_list = admin_site.get_app_list(request)
-        # add a url to app_index in every app in app_list
+        # add an url to app_index in every app in app_list
         for app in app_list:
-            url = reverse(f'{admin_site.name}:app_list', kwargs={'app_label': app['app_label']}, request=request)
+            url = reverse(f'{admin_site.name}:app_list', kwargs={
+                'app_label': app['app_label']}, request=request)
             app['url'] = url
         data = {
             'app_list': app_list,
@@ -140,7 +171,7 @@ class AutoCompleteView(APIView):
 
 class SiteContextView(APIView):
     """
-    Returns the Attributes of AdminSite class (e.g site_title, site_header)
+    Returns the Attributes of AdminSite class (e.g. site_title, site_header)
     """
     permission_classes = []
 
@@ -154,16 +185,58 @@ class AdminLogView(APIView):
     Returns a list of actions that were preformed using django admin.
     """
     serializer_class = None
+    pagination_class = None
     permission_classes = []
+    ordering_fields = ['action_time', '-action_time']
 
     def get(self, request, admin_site):
         from django.contrib.admin.models import LogEntry
-        page = admin_site.paginate_queryset(LogEntry.objects.all(), request, view=self)
+
+        queryset = LogEntry.objects.all()
+
+        # order the queryset
+        try:
+            ordering = self.request.query_params.get('o')
+            if ordering is not None:
+                if ordering not in self.ordering_fields:
+                    raise KeyError
+                queryset = queryset.order_by(ordering)
+        except:
+            return Response({'detail': 'Wrong ordering field set.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # filter the queryset.
+        try:
+            object_id = self.request.query_params.get('object_id')
+            if object_id is not None:
+                queryset = queryset.filter(object_id=object_id)
+        except:
+            return Response({'detail': 'Bad filters.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # paginate queryset.
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(queryset, request, view=self)
+
+        # serialize queryset.
         serializer = self.serializer_class(page, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response({
+            'action_list': self.serialize_messages(serializer.data),
+            'config': self.get_config(page, queryset)},
+            status=status.HTTP_200_OK)
+
+    def serialize_messages(self, data):
+        for idx, item in enumerate(data, start=0):
+            data[idx]['change_message'] = json.loads(
+                item['change_message'] or '[]')
+        return data
+
+    def get_config(self, page, queryset):
+        return {
+            'result_count': len(page),
+            'full_result_count': queryset.count(),
+        }
 
 
-# todo clean browsable api urls based on how client uses them
 class AdminAPIRootView(APIView):
     """
     A list of all root urls in django_api_admin
@@ -179,45 +252,66 @@ class AdminAPIRootView(APIView):
                 continue
             elif not request.user.is_authenticated and url.name in ('logout', 'password_change'):
                 continue
-            data[url.name] = reverse(namespace + ':' + url.name, request=request, args=args, kwargs=kwargs)
+            data[url.name] = reverse(
+                namespace + ':' + url.name, request=request, args=args, kwargs=kwargs)
 
         return Response(data or {}, status=status.HTTP_200_OK)
 
 
 # model admin wide views
-class AdminContextView(APIView):
-    """
-    List of options defined in the model_admin class.
-    """
-    permission_classes = []
-
-    def get(self, request, admin):
-        data = dict()
-        data['permission_map'] = admin.get_permission_map(request)
-        data['options'] = admin.get_admin_options(request)
-        if not admin.is_inline:
-            data['inlines'] = admin.get_inlines_list(request)
-        return Response(data, status=status.HTTP_200_OK)
-
-
 class ChangeListView(APIView):
     """
-    Return a json object representing the django admin changelist table.
+    Return a JSON object representing the django admin changelist table.
     supports querystring filtering, pagination and search also changes based on list display.
     Note: this is different from the list all objects view.
-    example returned json:
+    example of returned JSON object:
 
     {
-        'columns': [{'name': 'name'}, {'age': 'age'}, {'is_vip': 'is_this_author_a_vip'},],
-        'rows': [
-            {
-                'name': 'muhammad',
-                'age': 20,
-                'vip': false
+        config: {
+            "list_display": ["name", "age"],
+            "list_display_links": ["name"],
+            "list_filter": ["is_vip"],
+            "result_count": 1,
+            "full_result_count": 1,
+            "list_editable": ["is_vip"],
+
+            actions_list = [
+                ['delete_selected', 'delete selected authors'],
+                ['make_old', 'make all others old']
+            ]
+
+            filters: [
+                {'name' : 'is_vip', 'choices': ['All', 'Yes', 'No']}
+            ],
+
+            editing_fields: {
+                "name": {
+                    "name":"name",
+                    "type": "CharField",
+                    "attrs": {},
+                }
             }
-        ],
-        'result_count': 1,
-        'full_result_count: 1
+        },
+
+        "change_list": {
+            "columns": [
+                    {"field": "name", "headerName" "name"},
+                    {"field": "age", "headerName": "age"},
+                    {"field": "is_vip"", "headerName":"is_this_author_a_vip"}
+                ],
+
+            "rows": [
+                {
+                    'id': 1,
+                    'change_url': 'https://localhost:8000/api_admin/authors/1/change/',
+                    'cells': {
+                        "name": "muhammad",
+                        "age": 20,
+                        "vip": false
+                    }
+                }
+            ],
+        }
     }
     """
     permission_classes = []
@@ -229,8 +323,8 @@ class ChangeListView(APIView):
             raise NotFound(str(e))
         columns = self.get_columns(request, cl)
         rows = self.get_rows(request, cl)
-        return Response({'columns': columns, 'rows': rows, 'full_result_count': cl.full_result_count,
-                         'result_count': cl.result_count},
+        config = self.get_config(request, cl)
+        return Response({'config': config, 'columns': columns, 'rows': rows},
                         status=status.HTTP_200_OK)
 
     def get_columns(self, request, cl):
@@ -238,9 +332,10 @@ class ChangeListView(APIView):
         return changelist columns or headers.
         """
         columns = []
-        for field_name in cl.model_admin.list_display:
-            text, _ = label_for_field(field_name, cl.model, model_admin=cl.model_admin, return_attr=True)
-            columns.append({field_name: text})
+        for field_name in self.get_fields_list(request, cl):
+            text, _ = label_for_field(
+                field_name, cl.model, model_admin=cl.model_admin, return_attr=True)
+            columns.append({'field': field_name, 'headerName': text})
         return columns
 
     def get_rows(self, request, cl):
@@ -250,22 +345,103 @@ class ChangeListView(APIView):
         rows = []
         # generate changelist attributes (e.g result_list, paginator, result_count)
         cl.get_results(request)
-        empty_value_display = cl.model_admin.get_empty_value_display
+        empty_value_display = cl.model_admin.get_empty_value_display()
         for result in cl.result_list:
-            row = {}
-            for field_name in cl.model_admin.list_display:
+            model_info = (cl.model_admin.admin_site.name, type(
+                result)._meta.app_label, type(result)._meta.model_name)
+            row = {
+                'change_url': reverse('%s:%s_%s_change' % model_info, kwargs={'object_id': result.pk}, request=request),
+                'id': result.pk,
+                'cells': {}
+            }
+
+            for field_name in self.get_fields_list(request, cl):
                 try:
-                    _, _, value = lookup_field(field_name, result, cl.model_admin)
+                    _, _, value = lookup_field(
+                        field_name, result, cl.model_admin)
+
                     # if the value is a Model instance get the string representation
                     if value and isinstance(value, Model):
                         result_repr = str(value)
                     else:
                         result_repr = value
+
+                    # if there are choices display the choice description string instead of the value
+                    try:
+                        model_field = result._meta.get_field(field_name)
+                        choices = getattr(model_field, 'choices', None)
+                        if choices:
+                            result_repr = [
+                                choice for choice in choices if choice[0] == value
+                            ][0][1]
+                    except FieldDoesNotExist:
+                        pass
+
+                    # if the value is null set result_repr to empty_value_display
+                    if value == None:
+                        result_repr = empty_value_display
+
                 except ObjectDoesNotExist:
                     result_repr = empty_value_display
-                row[field_name] = result_repr
+
+                row['cells'][field_name] = result_repr
             rows.append(row)
         return rows
+
+    def get_config(self, request, cl):
+        config = {}
+
+        # add the ModelAdmin attributes that the changelist uses
+        for option_name in cl.model_admin.changelist_options:
+            config[option_name] = (getattr(cl.model_admin, option_name, None))
+
+        # changelist pagination attributes
+        config['full_count'] = cl.full_result_count
+        config['result_count'] = cl.result_count
+
+        # a list of action names and choices
+        config['action_choices'] = cl.model_admin.get_action_choices(
+            request, [])
+
+        # a list of filters titles and choices
+        filters_spec, _, _, _, _ = cl.get_filters(request)
+        if filters_spec:
+            config['filters'] = [
+                {"title": filter.title, "choices": filter.choices(cl)} for filter in filters_spec]
+        else:
+            config['filters'] = []
+
+        # a list of fields that you can sort with
+        list_display_fields = []
+        for field_name in self.get_fields_list(request, cl):
+            try:
+                cl.model._meta.get_field(field_name)
+                list_display_fields.append(field_name)
+            except FieldDoesNotExist:
+                pass
+        config['list_display_fields'] = list_display_fields
+
+        # a dict of serializer fields attributes for every field in list editable
+        editing_fields = {}
+        serializer_class = cl.model_admin.get_serializer_class(
+            request, changelist=True)
+        serializer = serializer_class()
+        form_fields = get_form_fields(serializer)
+
+        for field in form_fields:
+            if field['name'] in cl.list_editable:
+                editing_fields[field['name']] = field
+
+        config['editing_fields'] = editing_fields
+
+        return config
+
+    def get_fields_list(self, request, cl):
+        list_display = cl.model_admin.get_list_display(request)
+        exclude = cl.model_admin.exclude or tuple()
+        fields_list = tuple(
+            filter(lambda item: item not in exclude, list_display))
+        return fields_list
 
 
 class ListView(APIView):
@@ -298,7 +474,8 @@ class ListView(APIView):
             pattern = '%s:%s_%s_detail'
 
         for item in data:
-            item['detail_url'] = reverse(pattern % info, kwargs={'object_id': int(item['pk'])}, request=request)
+            item['detail_url'] = reverse(pattern % info, kwargs={
+                'object_id': int(item['pk'])}, request=request)
         return Response(data, status=status.HTTP_200_OK)
 
 
@@ -345,7 +522,8 @@ class DetailView(APIView):
                 model_type = ContentType.objects.get(app_label=admin.opts.app_label,
                                                      model=admin.model._meta.verbose_name)
                 data['view_on_site'] = reverse('%s:view_on_site' % admin.admin_site.name,
-                                               kwargs={'content_type_id': model_type.pk, 'object_id': obj.pk},
+                                               kwargs={
+                                                   'content_type_id': model_type.pk, 'object_id': obj.pk},
                                                request=request)
         else:
             info = (
@@ -356,8 +534,10 @@ class DetailView(APIView):
             pattern = '%s:%s_%s_%s_%s_'
 
         data['list_url'] = reverse((pattern + 'list') % info, request=request)
-        data['delete_url'] = reverse((pattern + 'delete') % info, kwargs={'object_id': data['pk']}, request=request)
-        data['change_url'] = reverse((pattern + 'change') % info, kwargs={'object_id': data['pk']}, request=request)
+        data['delete_url'] = reverse(
+            (pattern + 'delete') % info, kwargs={'object_id': data['pk']}, request=request)
+        data['change_url'] = reverse(
+            (pattern + 'change') % info, kwargs={'object_id': data['pk']}, request=request)
         return Response(data, status=status.HTTP_200_OK)
 
 
@@ -368,28 +548,36 @@ class AddView(APIView):
     serializer_class = None
     permission_classes = []
 
-    def get(self, request, admin):
+    def get(self, request, model_admin):
+        data = dict()
         serializer = self.serializer_class()
-        form_fields = admin.get_form_fields(serializer)
-        return Response({'form': {'fields': form_fields}}, status=status.HTTP_200_OK)
+        data['fields'] = get_form_fields(serializer)
+        data['config'] = self.get_config(model_admin)
 
-    def post(self, request, admin):
-        # if the user doesn't have add permission respond with permission denied
-        if not admin.has_add_permission(request):
+        if not model_admin.is_inline:
+            data['inlines'] = self.get_inlines(request, model_admin)
+
+        return Response(data, status=status.HTTP_200_OK)
+
+    def post(self, request, model_admin):
+        # if the user doesn't have added permission respond with permission denied
+        if not model_admin.has_add_permission(request):
             raise PermissionDenied
 
         # validate data and send
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            opts = admin.model._meta
+            opts = model_admin.model._meta
             new_object = serializer.save()
 
-            if admin.is_inline:
-                parent_model = admin.parent_model
-                change_object = parent_model.objects.get(**{new_object._meta.verbose_name: new_object})
-                model_admin = admin.admin_site._registry.get(parent_model)
+            if model_admin.is_inline:
+                parent_model = model_admin.parent_model
+                change_object = parent_model.objects.get(
+                    **{new_object._meta.verbose_name: new_object})
+                model_admin = model_admin.admin_site._registry.get(
+                    parent_model)
             else:
-                model_admin = admin
+                model_admin = model_admin
                 change_object = new_object
 
             # log addition of the new instance
@@ -397,10 +585,46 @@ class AddView(APIView):
                 'name': str(new_object._meta.verbose_name),
                 'object': str(new_object),
             }}])
-            msg = _(f'The {opts.verbose_name} “{str(new_object)}” was added successfully.')
-            return Response({opts.verbose_name: serializer.data, 'detail': msg}, status=status.HTTP_201_CREATED)
+            msg = _(
+                f'The {opts.verbose_name} “{str(new_object)}” was added successfully.')
+            return Response({'data': serializer.data, 'detail': msg}, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get_config(self, model_admin):
+        config = {}
+
+        for option_name in model_admin.form_options:
+            config[option_name] = getattr(
+                model_admin, option_name, None
+            )
+
+        return config
+
+    def get_inlines(self, request,  model_admin):
+        inlines = list()
+
+        for inline_admin in model_admin.get_inline_instances(request, obj=None):
+            serializer_class = inline_admin.get_serializer_class(request)
+            serializer = serializer_class()
+            inlines.append(
+                {
+                    'name': inline_admin.model._meta.verbose_name_plural,
+                    'object_name': inline_admin.model._meta.verbose_name,
+                    'admin_name':  inline_admin.parent_model._meta.app_label + '_' + inline_admin.parent_model._meta.model_name + '_' + inline_admin.model._meta.model_name,
+                    'url': self.get_inline_add_url(request, inline_admin),
+                    'fields': get_form_fields(serializer),
+                    'config': self.get_config(inline_admin)
+                }
+            )
+
+        return inlines
+
+    def get_inline_add_url(self,  request, inline_admin):
+        info = (inline_admin.admin_site.name, inline_admin.parent_model._meta.app_label,
+                inline_admin.parent_model._meta.model_name,
+                inline_admin.opts.app_label, inline_admin.opts.model_name)
+        return reverse('%s:%s_%s_%s_%s_add' % info, request=request)
 
 
 class ChangeView(APIView):
@@ -411,9 +635,19 @@ class ChangeView(APIView):
     permission_classes = []
 
     def get_serializer_instance(self, request, obj):
+        serializer = None
+
         if request.method == 'PATCH':
-            return self.serializer_class(instance=obj, data=request.data, partial=True)
-        return self.serializer_class(instance=obj, data=request.data)
+            serializer = self.serializer_class(
+                instance=obj, data=request.data, partial=True)
+
+        elif request.method == 'PUT':
+            serializer = self.serializer_class(instance=obj, data=request.data)
+
+        elif request.method == 'GET':
+            serializer = self.serializer_class(instance=obj)
+
+        return serializer
 
     def update(self, request, object_id, admin):
         if not admin.is_inline:
@@ -446,8 +680,13 @@ class ChangeView(APIView):
 
         # if the method is get return the change form fields dictionary
         if request.method == 'GET':
-            form_fields = admin.get_form_fields(serializer, change=True)
-            return Response({'form': {'fields': form_fields}}, status=status.HTTP_200_OK)
+            data = dict()
+
+            data['fields'] = get_form_fields(serializer, change=True)
+
+            data['config'] = self.get_config(admin)
+
+            return Response(data, status=status.HTTP_200_OK)
 
         # update and log the changes to the object
         if serializer.is_valid():
@@ -456,7 +695,8 @@ class ChangeView(APIView):
             if admin.is_inline:
                 parent_model = admin.parent_model
                 model_admin = admin.admin_site._registry.get(parent_model)
-                changed_object = parent_model.objects.get(**{updated_object._meta.verbose_name: updated_object})
+                changed_object = parent_model.objects.get(
+                    **{updated_object._meta.verbose_name: updated_object})
             else:
                 model_admin = admin
                 changed_object = updated_object
@@ -467,8 +707,9 @@ class ChangeView(APIView):
                 'object': str(updated_object),
                 'fields': helper.set_changed_model(updated_object).changed_fields
             }}])
-            msg = _(f'The {opts.verbose_name} “{str(updated_object)}” was changed successfully.')
-            return Response({opts.verbose_name: serializer.data, 'detail': msg})
+            msg = _(
+                f'The {opts.verbose_name} “{str(updated_object)}” was changed successfully.')
+            return Response({'data': serializer.data, 'detail': msg}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -480,6 +721,16 @@ class ChangeView(APIView):
 
     def get(self, request, object_id, admin):
         return self.update(request, object_id, admin)
+
+    def get_config(self, model_admin):
+        config = {}
+
+        for option_name in model_admin.form_options:
+            config[option_name] = getattr(
+                model_admin, option_name, None
+            )
+
+        return config
 
 
 class DeleteView(APIView):
@@ -512,7 +763,8 @@ class DeleteView(APIView):
         if not admin.has_delete_permission(request, obj):
             raise PermissionDenied
 
-        model_admin = admin if not admin.is_inline else admin.admin_site._registry.get(admin.parent_model)
+        model_admin = admin if not admin.is_inline else admin.admin_site._registry.get(
+            admin.parent_model)
 
         # log deletion
         model_admin.log_deletion(request, obj, str(obj))
@@ -546,6 +798,11 @@ class HandleActionView(APIView):
     permission_classes = []
     serializer_class = None
 
+    def get(self, request, admin):
+        serializer = self.serializer_class()
+        form_fields = get_form_fields(serializer)
+        return Response({'fields': form_fields}, status=status.HTTP_200_OK)
+
     def post(self, request, model_admin):
         serializer = self.serializer_class(data=request.data)
         # validate the action selected
@@ -568,8 +825,15 @@ class HandleActionView(APIView):
                 return Response({'detail': msg}, status=status.HTTP_400_BAD_REQUEST)
             if not select_across:
                 queryset = queryset.filter(pk__in=selected)
-            # actions should always return a Response
-            return func(model_admin, request, queryset)
+
+            # if the action returns a response
+            response = func(model_admin, request, queryset)
+
+            if response:
+                return response
+            else:
+                msg = _("action was performed successfully")
+                return Response({'detail': msg}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -606,7 +870,8 @@ class HistoryView(APIView):
         ).select_related().order_by('action_time')
 
         # paginate the action_list
-        page = model_admin.admin_site.paginate_queryset(action_list, request, view=self)
+        page = model_admin.admin_site.paginate_queryset(
+            action_list, request, view=self)
 
         # serialize the LogEntry queryset
         serializer = self.serializer_class(page, many=True)

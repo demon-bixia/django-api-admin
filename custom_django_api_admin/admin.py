@@ -13,8 +13,9 @@ class CustomAPIAdminSite(APIAdminSite):
 
     def get_urls(self):
         urlpatterns = super(CustomAPIAdminSite, self).get_urls()
-        urlpatterns.append(path('hello_world/', self.hello_world_view, name='hello'))
+        urlpatterns.append(
+            path('hello_world/', self.hello_world_view, name='hello'))
         return urlpatterns
 
 
-site = CustomAPIAdminSite('custom_api_admin')
+site = CustomAPIAdminSite(name='custom_api_admin')
