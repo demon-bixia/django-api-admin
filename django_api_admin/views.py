@@ -519,8 +519,7 @@ class DetailView(APIView):
             data['history_url'] = reverse((pattern + 'history') % info, kwargs={'object_id': data['pk']},
                                           request=request)
             if admin.view_on_site:
-                model_type = ContentType.objects.get(app_label=admin.opts.app_label,
-                                                     model=admin.model._meta.verbose_name)
+                model_type = ContentType.objects.get_for_model(model=admin.model)
                 data['view_on_site'] = reverse('%s:view_on_site' % admin.admin_site.name,
                                                kwargs={
                                                    'content_type_id': model_type.pk, 'object_id': obj.pk},
