@@ -25,7 +25,6 @@ shared_relationship_fields_attributes = [
 field_attributes = {
     # boolean fields attributes
     'BooleanField': {*shared_attributes},
-    'NullBooleanField': {*shared_attributes},
 
     # String fields attributes
     'CharField': [*shared_attributes, *shared_string_fields_attributes],

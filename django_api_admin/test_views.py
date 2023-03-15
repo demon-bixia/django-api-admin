@@ -149,12 +149,6 @@ tests = {
         }
     ],
 
-    'null_boolean_field_test': [
-        {
-            'is_admin': serializers.NullBooleanField()
-        }
-    ],
-
     # date field tests
     'date_field_test': [
         {
