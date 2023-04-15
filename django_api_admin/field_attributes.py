@@ -1,3 +1,7 @@
+"""
+Django rest framework serializer fields attributes.
+"""
+
 shared_attributes = [
     'read_only', 'write_only', 'required', 'default',
     'allow_blank', 'allow_null', 'style', 'label',

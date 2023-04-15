@@ -1,3 +1,7 @@
+"""
+API admin site.
+"""
+
 from functools import update_wrapper
 
 from django.apps import apps
@@ -11,11 +15,10 @@ from django.urls import NoReverseMatch, reverse
 from django.utils.text import capfirst
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
-from rest_framework import filters
 
 from . import actions
 from . import serializers as api_serializers
-from . import views as api_views
+from .views import site_views 
 from .options import APIModelAdmin
 from .pagination import AdminLogPagination, AdminResultsListPagination
 from .permissions import IsAdminUser
@@ -153,7 +156,7 @@ class APIAdminSite(AdminSite):
                                   'view_on_site', 'language_catalog']
             root_urls = [url for url in urlpatterns if
                          isinstance(url, URLPattern) and url.name and url.name not in excluded_url_names]
-            root_view = api_views.AdminAPIRootView.as_view(root_urls=root_urls)
+            root_view = site_views.AdminAPIRootView.as_view(root_urls=root_urls)
             urlpatterns.append(path('', root_view, name='api-root'))
         return urlpatterns
 
@@ -252,13 +255,13 @@ class APIAdminSite(AdminSite):
         defaults = {
             'permission_classes': self.default_permission_classes,
         }
-        return api_views.IndexView.as_view(**defaults)(request, admin_site=self)
+        return site_views.IndexView.as_view(**defaults)(request, admin_site=self)
 
     def app_index(self, request, app_label, extra_context=None):
         defaults = {
             'permission_classes': self.default_permission_classes,
         }
-        return api_views.AppIndexView.as_view(**defaults)(request, app_label=app_label, admin_site=self)
+        return site_views.AppIndexView.as_view(**defaults)(request, app_label=app_label, admin_site=self)
 
     def login(self, request, extra_context=None):
         defaults = {
@@ -267,40 +270,40 @@ class APIAdminSite(AdminSite):
         }
 
         if request.method == 'GET':
-            return api_views.LoginView.as_view(**defaults)(request, self)
+            return site_views.LoginView.as_view(**defaults)(request, self)
 
-        return api_views.LoginView.as_view(**defaults)(request, self)
+        return site_views.LoginView.as_view(**defaults)(request, self)
 
     def logout(self, request, extra_context=None):
         defaults = {
             'permission_classes': self.default_permission_classes,
         }
-        return api_views.LogoutView.as_view(**defaults)(request)
+        return site_views.LogoutView.as_view(**defaults)(request)
 
     def password_change(self, request, extra_context=None):
         defaults = {
             'permission_classes': self.default_permission_classes,
             'serializer_class': self.password_change_serializer,
         }
-        return api_views.PasswordChangeView.as_view(**defaults)(request)
+        return site_views.PasswordChangeView.as_view(**defaults)(request)
 
     def i18n_javascript(self, request, extra_context=None):
         defaults = {
             'permission_classes': self.default_permission_classes,
         }
-        return api_views.LanguageCatalogView.as_view(**defaults)(request)
+        return site_views.LanguageCatalogView.as_view(**defaults)(request)
 
     def autocomplete_view(self, request):
         defaults = {
             'permission_classes': self.default_permission_classes,
         }
-        return api_views.AutoCompleteView.as_view(**defaults)(request, admin_site=self)
+        return site_views.AutoCompleteView.as_view(**defaults)(request, admin_site=self)
 
     def site_context_view(self, request):
         defaults = {
             'permission_classes': self.default_permission_classes,
         }
-        return api_views.SiteContextView.as_view(**defaults)(request, admin_site=self)
+        return site_views.SiteContextView.as_view(**defaults)(request, admin_site=self)
 
     def admin_log_view(self, request):
         defaults = {
@@ -308,20 +311,20 @@ class APIAdminSite(AdminSite):
             'pagination_class': self.default_log_pagination_class,
             'serializer_class': self.get_log_entry_serializer(),
         }
-        return api_views.AdminLogView.as_view(**defaults)(request, self)
+        return site_views.AdminLogView.as_view(**defaults)(request, self)
 
     def csrf_view(self, request, extra_context=None):
         defaults = {
             'permission_classes': [],
         }
-        return api_views.CsrfTokenView.as_view(**defaults)(request)
+        return site_views.CsrfTokenView.as_view(**defaults)(request)
 
     def user_info_view(self, request):
         defaults = {
             'permission_classes': self.default_permission_classes,
             'serializer_class': self.user_serializer
         }
-        return api_views.UserInformation.as_view(**defaults)(request)
+        return site_views.UserInformation.as_view(**defaults)(request)
 
 
 site = APIAdminSite(name='api_admin', include_auth=True)

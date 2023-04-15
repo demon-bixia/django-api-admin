@@ -1,4 +1,7 @@
-"""These admins are used in tests.py to test django_api_admin."""
+"""
+Test admins are used in tests.py to test django_api_admin.
+not included in the production branch
+"""
 from django.contrib import admin
 
 from .models import Author, Publisher, Book, GuestEntry

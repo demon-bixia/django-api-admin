@@ -137,3 +137,8 @@ dmypy.json
 thinking.txt
 Todo.txt
 .gitignore
+http
+.vscode
+node_modules
+**/**.sql
+todo

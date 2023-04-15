@@ -1,15 +1,17 @@
-# views used to test the not included for production.
+""" 
+views used to test the not included for production.
+"""
 import datetime
 import json
-from multiprocessing import context
 
 from django.conf import settings
+
 from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Author
 
-from .utils import get_form_fields
+from django_api_admin.models import Author
+from django_api_admin.declarations.functions import get_form_fields
 
 tests = {
     # char field tests

@@ -7,7 +7,6 @@ Expose django.contrib.admin as a restful service. useful for adding new features
 - [x] Customizable AdminSite and ModelAdmin.
 - [x] Supports InlineModelAdmins.
 - [x] Provides data to dynamically create forms on clients from serializers.
-- [x] Supports Arabic Language.
 - [x] Extensively tested
 
 ## Requirements 📄
