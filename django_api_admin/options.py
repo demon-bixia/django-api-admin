@@ -8,8 +8,8 @@ from django.contrib.auth import get_permission_codename
 from django.db import router, transaction
 from rest_framework import serializers
 
-from .views import admin_views
-from .serializers import ActionSerializer
+from django_api_admin.views import admin_views
+from django_api_admin.serializers import ActionSerializer
 
 
 class BaseAPIModelAdmin:
