@@ -103,7 +103,31 @@ class DetailView(APIView):
 
 class AddView(APIView):
     """
-    Add new instances of this model.
+    Add new instances of this model. if this model has inline models associated with it 
+    you can also add inline instances to this model.
+
+    a request body should look like this:
+
+    {
+        "data": {
+            // the values to create new instance of the model
+            "name": "lorem ipsum"
+            ...
+        },
+        // the inline instances you want to create (optional)
+        "create_inlines": {
+            "books": [
+                {
+                    "title": "lorem ipsum"
+                    ...
+                },
+                {
+                    "title": "lorem ipsum"
+                    ...
+                },
+            ]
+        }
+    }
     """
     serializer_class = None
     permission_classes = []
@@ -168,7 +192,43 @@ class AddView(APIView):
 
 class ChangeView(APIView):
     """
-    Change an existing instance of this model.
+    Change an existing instance of this model. if the models has inline models associated with it you 
+    create, update and delete instances of the models associated with it.
+
+        {
+        "data": {
+            // the values to create new instance of the model
+            "name": "lorem ipsum"
+            ...
+        },
+        // the inline instances you want to create (optional)
+        "create_inlines": {
+            "books": [
+                {
+                    "title": "lorem ipsum"
+                    ...
+                },
+            ]
+        },
+        // the inline instances you want to update make sure you include a pk field (optional)
+        "update_inlines": {
+            "books": [
+                {
+                    "pk":10,
+                    "title": "lorem ipsum"
+                    ...
+                },
+            ]
+        },
+        // the inline instances you want to delete make sure you include a pk field (optional)
+        "delete_inlines": {
+            "books": [
+                {
+                    "pk":10
+                },
+            ]
+        }
+    }
     """
     serializer_class = None
     permission_classes = []
