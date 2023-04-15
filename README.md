@@ -5,9 +5,10 @@ Expose django.contrib.admin as a restful service. useful for adding new features
 - [x] Expose all django.contrib.admin views as a restful api.
 - [x] Similar to django.contrib.admin.
 - [x] Customizable AdminSite and ModelAdmin.
-- [x] Supports InlineModelAdmins.
+- [x] Supports InlineModelAdmins and bulk edits.
 - [x] Provides data to dynamically create forms on clients from serializers.
 - [x] Extensively tested
+
 
 ## Requirements 📄
 
