@@ -16,12 +16,12 @@ from django.utils.text import capfirst
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 
-from . import actions
-from . import serializers as api_serializers
-from .views import site_views 
-from .options import APIModelAdmin
-from .pagination import AdminLogPagination, AdminResultsListPagination
-from .permissions import IsAdminUser
+from django_api_admin import actions
+from django_api_admin import serializers as api_serializers
+from django_api_admin.views import site_views
+from django_api_admin.options import APIModelAdmin
+from django_api_admin.pagination import AdminLogPagination, AdminResultsListPagination
+from django_api_admin.permissions import IsAdminUser
 
 UserModel = get_user_model()
 
@@ -156,7 +156,8 @@ class APIAdminSite(AdminSite):
                                   'view_on_site', 'language_catalog']
             root_urls = [url for url in urlpatterns if
                          isinstance(url, URLPattern) and url.name and url.name not in excluded_url_names]
-            root_view = site_views.AdminAPIRootView.as_view(root_urls=root_urls)
+            root_view = site_views.AdminAPIRootView.as_view(
+                root_urls=root_urls)
             urlpatterns.append(path('', root_view, name='api-root'))
         return urlpatterns
 
