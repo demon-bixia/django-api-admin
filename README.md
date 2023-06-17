@@ -11,7 +11,7 @@ Expose django.contrib.admin as a restful service. useful for adding new features
 
 ## Demo 🚀
 
-You can also test it in this <a href="https://django-api-admin.demon-bixia.repl.co/" target="_blank">demo</a> that is hosted on replit. use these credentials to login
+You can also test it in this <a href="https://django-api-admin.demon-bixia.repl.co/api_admin/" target="_blank">demo</a> that is hosted on replit. use these credentials to login
 
 * username: admin
 * password: password
