@@ -44,9 +44,12 @@ class ListView(APIView):
         )
         pattern = '%s:%s_%s_detail'
 
+        domain = request.get_host()
+        scheme = 'https://' if request.is_secure() else 'http://'
         for item in data:
-            item['detail_url'] = reverse(pattern % info, kwargs={
+            path = reverse(pattern % info, kwargs={
                 'object_id': int(item['pk'])}, request=request)
+            item['detail_url'] = scheme + domain + path
         return Response(data, status=status.HTTP_200_OK)
 
 
@@ -83,20 +86,17 @@ class DetailView(APIView):
             admin.model._meta.model_name,
         )
         pattern = '%s:%s_%s_'
-        data['history_url'] = reverse((pattern + 'history') % info, kwargs={'object_id': data['pk']},
-                                      request=request)
+        domain = request.get_host()
+        scheme = 'https://' if request.is_secure() else 'http://'
         if admin.view_on_site:
             model_type = ContentType.objects.get_for_model(
-                model=admin.model)
-            data['view_on_site'] = reverse('%s:view_on_site' % admin.admin_site.name,
-                                           kwargs={
-                                               'content_type_id': model_type.pk, 'object_id': obj.pk},
-                                           request=request)
-
-        data['list_url'] = reverse((pattern + 'list') % info, request=request)
-        data['delete_url'] = reverse(
+                model=admin.model)    
+        data['view_on_site'] = scheme + domain + reverse('%s:view_on_site' % admin.admin_site.name, kwargs={ 'content_type_id': model_type.pk, 'object_id': obj.pk}, request=request)
+        data['list_url'] = scheme + domain + reverse((pattern + 'list') % info, request=request)
+        data['history_url'] = scheme + domain + reverse((pattern + 'history') % info, kwargs={'object_id': data['pk']}, request=request)
+        data['delete_url'] = scheme + domain + reverse(
             (pattern + 'delete') % info, kwargs={'object_id': data['pk']}, request=request)
-        data['change_url'] = reverse(
+        data['change_url'] = scheme + domain + reverse(
             (pattern + 'change') % info, kwargs={'object_id': data['pk']}, request=request)
         return Response(data, status=status.HTTP_200_OK)
 
@@ -486,11 +486,13 @@ class ChangeListView(APIView):
         # generate changelist attributes (e.g result_list, paginator, result_count)
         cl.get_results(request)
         empty_value_display = cl.model_admin.get_empty_value_display()
+        domain = request.get_host()
+        scheme = 'https://' if request.is_secure() else 'http://'
         for result in cl.result_list:
             model_info = (cl.model_admin.admin_site.name, type(
                 result)._meta.app_label, type(result)._meta.model_name)
             row = {
-                'change_url': reverse('%s:%s_%s_change' % model_info, kwargs={'object_id': result.pk}, request=request),
+                'change_url': scheme + domain + reverse('%s:%s_%s_change' % model_info, kwargs={'object_id': result.pk}, request=request),
                 'id': result.pk,
                 'cells': {}
             }

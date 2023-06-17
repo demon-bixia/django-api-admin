@@ -8,14 +8,13 @@ from django.contrib.auth import login, logout
 from django.middleware.csrf import get_token
 from django.utils.translation import gettext_lazy as _
 from django.views.i18n import JSONCatalog
+from django.urls import reverse
 
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.reverse import reverse
 from rest_framework.views import APIView
 
 from django_api_admin.declarations.functions import get_form_fields
-
 # todo split the views file.
 # todo add more comments.
 # todo add support for bulk edits.
@@ -110,11 +109,12 @@ class IndexView(APIView):
 
     def get(self, request, admin_site):
         app_list = admin_site.get_app_list(request)
+
         # add an url to app_index in every app in app_list
+        domain = request.get_host()
+        scheme = 'https://' if request.is_secure() else 'http://'
         for app in app_list:
-            url = reverse(f'{admin_site.name}:app_list', kwargs={
-                'app_label': app['app_label']}, request=request)
-            app['url'] = url
+            app['url'] = scheme + domain + reverse(f'{admin_site.name}:app_list', kwargs={ 'app_label': app['app_label']})
         data = {
             'app_list': app_list,
         }
@@ -251,7 +251,9 @@ class AdminAPIRootView(APIView):
                 continue
             elif not request.user.is_authenticated and url.name in ('logout', 'password_change'):
                 continue
-            data[url.name] = reverse(
-                namespace + ':' + url.name, request=request, args=args, kwargs=kwargs)
+
+            domain = request.get_host()
+            scheme = 'https://' if request.is_secure() else 'http://'
+            data[url.name] = scheme + domain + reverse(namespace + ':' + url.name, args=args, kwargs=kwargs)
 
         return Response(data or {}, status=status.HTTP_200_OK)
