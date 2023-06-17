@@ -51,7 +51,7 @@ class LoginView(APIView):
 
     def post(self, request, admin_site):
         serializer = self.serializer_class(
-            data=request.data, context={'request': request})
+            data=request.data.get('data'), context={'request': request})
         if serializer.is_valid():
             user = serializer.get_user()
             login(request, user)
