@@ -47,9 +47,8 @@ class ListView(APIView):
         domain = request.get_host()
         scheme = 'https://' if request.is_secure() else 'http://'
         for item in data:
-            path = reverse(pattern % info, kwargs={
+            item['detail_url'] = reverse(pattern % info, kwargs={
                 'object_id': int(item['pk'])}, request=request)
-            item['detail_url'] = scheme + domain + path
         return Response(data, status=status.HTTP_200_OK)
 
 
@@ -91,12 +90,12 @@ class DetailView(APIView):
         if admin.view_on_site:
             model_type = ContentType.objects.get_for_model(
                 model=admin.model)    
-        data['view_on_site'] = scheme + domain + reverse('%s:view_on_site' % admin.admin_site.name, kwargs={ 'content_type_id': model_type.pk, 'object_id': obj.pk}, request=request)
-        data['list_url'] = scheme + domain + reverse((pattern + 'list') % info, request=request)
-        data['history_url'] = scheme + domain + reverse((pattern + 'history') % info, kwargs={'object_id': data['pk']}, request=request)
-        data['delete_url'] = scheme + domain + reverse(
+        data['view_on_site'] = reverse('%s:view_on_site' % admin.admin_site.name, kwargs={ 'content_type_id': model_type.pk, 'object_id': obj.pk}, request=request)
+        data['list_url'] = reverse((pattern + 'list') % info, request=request)
+        data['history_url'] = reverse((pattern + 'history') % info, kwargs={'object_id': data['pk']}, request=request)
+        data['delete_url'] = reverse(
             (pattern + 'delete') % info, kwargs={'object_id': data['pk']}, request=request)
-        data['change_url'] = scheme + domain + reverse(
+        data['change_url'] = reverse(
             (pattern + 'change') % info, kwargs={'object_id': data['pk']}, request=request)
         return Response(data, status=status.HTTP_200_OK)
 
@@ -492,7 +491,7 @@ class ChangeListView(APIView):
             model_info = (cl.model_admin.admin_site.name, type(
                 result)._meta.app_label, type(result)._meta.model_name)
             row = {
-                'change_url': scheme + domain + reverse('%s:%s_%s_change' % model_info, kwargs={'object_id': result.pk}, request=request),
+                'change_url': reverse('%s:%s_%s_change' % model_info, kwargs={'object_id': result.pk}, request=request),
                 'id': result.pk,
                 'cells': {}
             }
