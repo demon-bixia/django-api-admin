@@ -8,11 +8,11 @@ from django.contrib.auth import login, logout
 from django.middleware.csrf import get_token
 from django.utils.translation import gettext_lazy as _
 from django.views.i18n import JSONCatalog
-from django.urls import reverse
 
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.reverse import reverse
 
 from django_api_admin.declarations.functions import get_form_fields
 # todo split the views file.
@@ -51,7 +51,7 @@ class LoginView(APIView):
 
     def post(self, request, admin_site):
         serializer = self.serializer_class(
-            data=request.data.get('data'), context={'request': request})
+            data=request.data, context={'request': request})
         if serializer.is_valid():
             user = serializer.get_user()
             login(request, user)
@@ -114,7 +114,7 @@ class IndexView(APIView):
         domain = request.get_host()
         scheme = 'https://' if request.is_secure() else 'http://'
         for app in app_list:
-            app['url'] = scheme + domain + reverse(f'{admin_site.name}:app_list', kwargs={ 'app_label': app['app_label']})
+            app['url'] =  reverse(f'{admin_site.name}:app_list', kwargs={ 'app_label': app['app_label']}, request=request)
         data = {
             'app_list': app_list,
         }
@@ -254,6 +254,6 @@ class AdminAPIRootView(APIView):
 
             domain = request.get_host()
             scheme = 'https://' if request.is_secure() else 'http://'
-            data[url.name] = scheme + domain + reverse(namespace + ':' + url.name, args=args, kwargs=kwargs)
+            data[url.name] = reverse(namespace + ':' + url.name, args=args, kwargs=kwargs, request=request)
 
         return Response(data or {}, status=status.HTTP_200_OK)
