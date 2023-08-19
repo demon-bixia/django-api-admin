@@ -148,7 +148,7 @@ class AddView(APIView):
             raise PermissionDenied
 
         # validate data and send
-        serializer = self.serializer_class(data=request.data.get('data', {}))
+        serializer = self.serializer_class(data=request.data) 
         if serializer.is_valid():
             # create the new object
             opts = model_admin.model._meta
@@ -237,11 +237,11 @@ class ChangeView(APIView):
 
         if request.method == 'PATCH':
             serializer = self.serializer_class(
-                instance=obj, data=request.data.get('data', {}), partial=True)
+                instance=obj, data=request.data, partial=True)
 
         elif request.method == 'PUT':
             serializer = self.serializer_class(
-                instance=obj, data=request.data.get('data', {}))
+                instance=obj, data=request.data)
 
         elif request.method == 'GET':
             serializer = self.serializer_class(instance=obj)
