@@ -44,11 +44,9 @@ class ListView(APIView):
         )
         pattern = '%s:%s_%s_detail'
 
-        domain = request.get_host()
-        scheme = 'https://' if request.is_secure() else 'http://'
         for item in data:
             item['detail_url'] = reverse(pattern % info, kwargs={
-                'object_id': int(item['pk'])}, request=request)
+                'object_id': item['pk']}, request=request)
         return Response(data, status=status.HTTP_200_OK)
 
 
@@ -85,8 +83,6 @@ class DetailView(APIView):
             admin.model._meta.model_name,
         )
         pattern = '%s:%s_%s_'
-        domain = request.get_host()
-        scheme = 'https://' if request.is_secure() else 'http://'
         if admin.view_on_site:
             model_type = ContentType.objects.get_for_model(
                 model=admin.model)    
@@ -485,8 +481,6 @@ class ChangeListView(APIView):
         # generate changelist attributes (e.g result_list, paginator, result_count)
         cl.get_results(request)
         empty_value_display = cl.model_admin.get_empty_value_display()
-        domain = request.get_host()
-        scheme = 'https://' if request.is_secure() else 'http://'
         for result in cl.result_list:
             model_info = (cl.model_admin.admin_site.name, type(
                 result)._meta.app_label, type(result)._meta.model_name)

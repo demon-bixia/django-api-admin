@@ -15,10 +15,6 @@ from rest_framework.views import APIView
 from rest_framework.reverse import reverse
 
 from django_api_admin.declarations.functions import get_form_fields
-# todo split the views file.
-# todo add more comments.
-# todo add support for bulk edits.
-
 
 class CsrfTokenView(APIView):
     serializer_class = None
@@ -111,8 +107,6 @@ class IndexView(APIView):
         app_list = admin_site.get_app_list(request)
 
         # add an url to app_index in every app in app_list
-        domain = request.get_host()
-        scheme = 'https://' if request.is_secure() else 'http://'
         for app in app_list:
             app['url'] =  reverse(f'{admin_site.name}:app_list', kwargs={ 'app_label': app['app_label']}, request=request)
         data = {
@@ -252,8 +246,6 @@ class AdminAPIRootView(APIView):
             elif not request.user.is_authenticated and url.name in ('logout', 'password_change'):
                 continue
 
-            domain = request.get_host()
-            scheme = 'https://' if request.is_secure() else 'http://'
             data[url.name] = reverse(namespace + ':' + url.name, args=args, kwargs=kwargs, request=request)
 
         return Response(data or {}, status=status.HTTP_200_OK)
