@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from django_api_admin.models import Author
-from django_api_admin.declarations.functions import get_form_fields
+from django_api_admin.utils.get_form_fields import get_form_fields
 
 tests = {
     # char field tests

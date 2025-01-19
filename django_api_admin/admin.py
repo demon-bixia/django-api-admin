@@ -22,7 +22,8 @@ class PublisherAPIAdmin(APIModelAdmin):
 # register in api_admin_site
 @admin.register(Author, site=site)
 class AuthorAPIAdmin(APIModelAdmin):
-    list_display = ('name', 'age', 'user', 'is_old_enough', 'title', 'gender')
+    list_display = ('name', 'age', 'user', 'is_old_enough',
+                    'title', 'gender',)
     exclude = ('gender',)
     list_display_links = ('name',)
     list_filter = ('is_vip', 'age')
@@ -34,13 +35,13 @@ class AuthorAPIAdmin(APIModelAdmin):
     actions_selection_counter = True
 
     date_hierarchy = 'date_joined'
-    search_fields = ('name',)
+    search_fields = ('name', 'publisher__name',)
     ordering = ('-age',)
 
     raw_id_fields = ('publisher',)
     fieldsets = (
         ('Personal Information', {
-         'fields': (('name', 'age'),  'user', 'is_vip', 'gender')}),
+         'fields': (('name', 'age'),  'user', 'is_vip', 'gender', 'publisher')}),
     )
     inlines = [APIBookInline, ]
 
@@ -60,21 +61,24 @@ class PublisherAdmin(admin.ModelAdmin):
 
 class AuthorAdmin(admin.ModelAdmin):
     list_display = ('name', 'age', 'is_a_vip',
-                    'user', 'is_old_enough', 'title', 'gender',)
+                    'user', 'is_old_enough', 'title', 'gender', )
     list_filter = ('is_vip', 'age')
     list_editable = ('age',)
     list_per_page = 6
     empty_value_display = '-'
 
+    # filter_horizontal = ('publisher')
+
     actions = (make_old, make_young,)
 
-    raw_id_fields = ('publisher',)
+    raw_id_fields = ('publisher', )
     autocomplete_fields = ('publisher',)
     date_hierarchy = 'date_joined'
 
     ordering = ('-age',)
     fieldsets = (
-        ('Information', {'fields': (('name', 'age'), 'is_vip', 'user')}),
+        ('Information', {
+         'fields': (('name', 'age'), 'is_vip', 'user', 'publisher')}),
     )
     # a list of field names to exclude from the add/change form.
     exclude = ('gender',)

@@ -143,3 +143,4 @@ http
 node_modules
 **/**.sql
 todo
+todo.md

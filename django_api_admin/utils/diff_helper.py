@@ -1,6 +1,3 @@
-"""
-Shared miscellaneous classes.
-"""
 from django.forms import model_to_dict
 from django.utils.translation import gettext_lazy as _
 
@@ -47,4 +44,3 @@ class ModelDiffHelper(object):
     def _dict(self, model):
         return model_to_dict(model, fields=[field.name for field in
                                             model._meta.fields])
-

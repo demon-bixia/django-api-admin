@@ -1,15 +1,22 @@
 """
 API model admin.
 """
-
 from django.contrib.admin.options import InlineModelAdmin, ModelAdmin
 from django.contrib.admin.utils import flatten_fieldsets
 from django.contrib.auth import get_permission_codename
 from django.db import router, transaction
+
 from rest_framework import serializers
 
-from django_api_admin.views import admin_views
 from django_api_admin.serializers import ActionSerializer
+from django_api_admin.views.admin_views.add import AddView
+from django_api_admin.views.admin_views.change import ChangeView
+from django_api_admin.views.admin_views.changelist import ChangeListView
+from django_api_admin.views.admin_views.delete import DeleteView
+from django_api_admin.views.admin_views.detail import DetailView
+from django_api_admin.views.admin_views.handle_action import HandleActionView
+from django_api_admin.views.admin_views.history import HistoryView
+from django_api_admin.views.admin_views.list import ListView
 
 
 class BaseAPIModelAdmin:
@@ -20,9 +27,7 @@ class BaseAPIModelAdmin:
     # of the model_admin
     form_options = [
         'fieldsets', 'fields',
-
         'save_on_top', 'save_as', 'save_as_continue',
-
         'view_on_site',
     ]
 
@@ -34,10 +39,8 @@ class BaseAPIModelAdmin:
         fieldsets_fields = flatten_fieldsets(self.get_fieldsets(request, obj))
         fieldsets_fields.append('pk')
         # get excluded fields
-        excluded = self.get_exclude(request, obj)
+        excluded = self.exclude
         exclude = list(excluded) if excluded is not None else []
-        # get read only fields
-        readonly_fields = self.get_readonly_fields(request, obj)
         # subtract excluded fields from fieldsets_fields
         fields = [field for field in fieldsets_fields if field not in exclude]
 
@@ -50,7 +53,7 @@ class BaseAPIModelAdmin:
             'Meta': type('Meta', (object,), {
                 'model': self.model,
                 'fields': fields,
-                'read_only_fields': readonly_fields,
+                'read_only_fields': self.readonly_fields,
             }),
         })
 
@@ -67,6 +70,17 @@ class BaseAPIModelAdmin:
             'has_view_or_change_permission': self.has_view_or_change_permission(request),
             'has_module_permission': self.has_module_permission(request),
         }
+
+    def get_queryset(self, request):
+        """
+        Return a QuerySet of all model instances that can be edited by the
+        admin site. This is used by changelist_view.
+        """
+        qs = self.model._default_manager.get_queryset()
+        ordering = self.get_ordering(request)
+        if ordering:
+            qs = qs.order_by(*ordering)
+        return qs
 
     def has_add_permission(self, request, obj=None):
         opts = self.opts
@@ -107,14 +121,14 @@ class BaseAPIModelAdmin:
             'serializer_class': self.get_serializer_class(request),
             'permission_classes': self.admin_site.default_permission_classes,
         }
-        return admin_views.ListView.as_view(**defaults)(request, self)
+        return ListView.as_view(**defaults)(request, self)
 
     def detail_view(self, request, object_id):
         defaults = {
             'serializer_class': self.get_serializer_class(request),
             'permission_classes': self.admin_site.default_permission_classes,
         }
-        return admin_views.DetailView.as_view(**defaults)(request, object_id, self)
+        return DetailView.as_view(**defaults)(request, object_id, self)
 
     def add_view(self, request, **kwargs):
         defaults = {
@@ -122,7 +136,7 @@ class BaseAPIModelAdmin:
             'permission_classes': self.admin_site.default_permission_classes,
         }
         with transaction.atomic(using=router.db_for_write(self.model)):
-            return admin_views.AddView.as_view(**defaults)(request, self, **kwargs)
+            return AddView.as_view(**defaults)(request, self, **kwargs)
 
     def change_view(self, request, object_id, **kwargs):
         defaults = {
@@ -130,14 +144,14 @@ class BaseAPIModelAdmin:
             'permission_classes': self.admin_site.default_permission_classes,
         }
         with transaction.atomic(using=router.db_for_write(self.model)):
-            return admin_views.ChangeView.as_view(**defaults)(request, object_id, self, **kwargs)
+            return ChangeView.as_view(**defaults)(request, object_id, self, **kwargs)
 
     def delete_view(self, request, object_id, **kwargs):
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes
         }
         with transaction.atomic(using=router.db_for_write(self.model)):
-            return admin_views.DeleteView.as_view(**defaults)(request, object_id, self, **kwargs)
+            return DeleteView.as_view(**defaults)(request, object_id, self, **kwargs)
 
 
 class APIModelAdmin(BaseAPIModelAdmin, ModelAdmin):
@@ -220,21 +234,27 @@ class APIModelAdmin(BaseAPIModelAdmin, ModelAdmin):
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes
         }
-        return admin_views.ChangeListView.as_view(**defaults)(request, self)
+        return ChangeListView.as_view(**defaults)(request, self)
 
     def handle_action_view(self, request):
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes,
             'serializer_class': self.get_action_serializer(request)
         }
-        return admin_views.HandleActionView.as_view(**defaults)(request, self)
+        return HandleActionView.as_view(**defaults)(request, self)
 
     def history_view(self, request, object_id, extra_context=None):
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes,
             'serializer_class': self.admin_site.log_entry_serializer,
         }
-        return admin_views.HistoryView.as_view(**defaults)(request, object_id, self)
+        return HistoryView.as_view(**defaults)(request, object_id, self)
+
+    # def to_field_allowed(self, request, to_field):
+        # """
+        # Return True if the model associated with this admin should be
+        # allowed to be referenced by the specified field.
+        # """
 
 
 class InlineAPIModelAdmin(BaseAPIModelAdmin, InlineModelAdmin):

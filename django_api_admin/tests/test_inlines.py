@@ -6,7 +6,7 @@ from django.urls import path, reverse
 from rest_framework.test import (APITestCase,
                                  URLPatternsTestCase)
 
-from django_api_admin.models import Author, Book
+from django_api_admin.models import Author, Book, Publisher
 from django_api_admin.sites import site
 
 
@@ -34,6 +34,9 @@ class InlineModelAdminTestCase(APITestCase, URLPatternsTestCase):
             name="Allen carr", age=60, is_vip=True, user_id=self.user.pk)
         self.author_info = (Author._meta.app_label, Author._meta.model_name)
 
+        # create a valid publisher
+        Publisher.objects.create(name='rock')
+
         # create some valid Books
         self.a1_b1 = Book.objects.create(
             title='High performance django', author=self.a1)
@@ -55,6 +58,7 @@ class InlineModelAdminTestCase(APITestCase, URLPatternsTestCase):
                 "age": 60,
                 "user": self.user.pk,
                 "is_vip": False,
+                'publisher': [1]
             },
             "create_inlines": {
                 "books": [
@@ -87,7 +91,8 @@ class InlineModelAdminTestCase(APITestCase, URLPatternsTestCase):
                 "name": "René Descartes",
                 "age": 60,
                 "user": self.user.pk,
-                "is_vip": True
+                "is_vip": True,
+                'publisher': [1]
             },
             "update_inlines": {
                 "books": [

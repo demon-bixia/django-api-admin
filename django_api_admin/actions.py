@@ -16,7 +16,7 @@ def delete_selected(modeladmin, request, queryset):
     default api_admin action deletes the selected objects
     no confirmation page
     """
-    deletable_objects, model_count, perms_needed, protected = modeladmin.get_deleted_objects(
+    _deletable_objects, _model_count, perms_needed, _protected = modeladmin.get_deleted_objects(
         queryset, request)
 
     # check the permissions
@@ -33,18 +33,17 @@ def delete_selected(modeladmin, request, queryset):
 
     # delete the queryset
     modeladmin.delete_queryset(request, queryset)
-    msg = _("Successfully deleted %(count)d %(items)s.") % {
-        "count": n, "items": model_ngettext(modeladmin.opts, n)}
+    msg = _(f"Successfully deleted {n} {model_ngettext(modeladmin.opts, n)}.")
     return Response({'detail': msg}, status=status.HTTP_200_OK)
 
 
-@action(description='make all authors old')
+@ action(description='make all authors old')
 def make_old(model_admin, request, queryset):
     queryset.update(age=60)
     return Response({'detail': 'All select authors are old now'}, status=status.HTTP_200_OK)
 
 
-@action(description='make all authors young')
+@ action(description='make all authors young')
 def make_young(model_admin, request, queryset):
     queryset.update(age=1)
     return Response({'detail': 'All select authors are young now'}, status=status.HTTP_200_OK)

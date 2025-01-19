@@ -12,6 +12,7 @@ from rest_framework.test import (APIRequestFactory, APITestCase,
 from django_api_admin.models import Author, Publisher
 from django_api_admin.sites import site
 
+
 UserModel = get_user_model()
 
 
@@ -57,14 +58,6 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['name'], 'muhammad')
-
-    def test_autocomplete_views(self):
-        # GET /admin/autocomplete/?term=p&app_label=django_api_admin&model_name=author&field_name=publisher
-        url = reverse(
-            'api_admin:autocomplete') + '?term=r&app_label=django_api_admin&model_name=author&field_name=publisher'
-        response = self.client.get(url)
-        data = json.loads(response.data['content'])
-        self.assertEqual(int(data['results'][0]['id']), 1)
 
     def test_performing_custom_actions(self):
         action_dict = {
@@ -145,6 +138,7 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
                 'age': 60,
                 'is_vip': True,
                 'user': self.user.pk,
+                'publisher': [1]
             }
         }
         response = self.client.post(url, data=data, format="json")
@@ -167,7 +161,8 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
             'data': {
                 'name': 'muhammad',
                 'age': '60',
-                'is_vip': True
+                'is_vip': True,
+                'publisher': [1]
             }
         }
         response = self.client.patch(url, data=data, format="json")
@@ -188,19 +183,22 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
                 'name': 'test1',
                 'age': '60',
                 'is_vip': True,
-                'user': self.user.pk
+                'user': self.user.pk,
+                'publisher': [1]
             },
             {
                 'name': 'test2',
                 'age': '60',
                 'is_vip': True,
-                'user': self.user.pk
+                'user': self.user.pk,
+                'publisher': [1]
             },
             {
                 'name': 'test3',
                 'age': '60',
                 'is_vip': True,
-                'user': self.user.pk
+                'user': self.user.pk,
+                'publisher': [1]
             },
         ]
         for author in authors:

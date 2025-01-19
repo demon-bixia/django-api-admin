@@ -12,7 +12,7 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.test import (APIRequestFactory, APITestCase,
                                  URLPatternsTestCase, force_authenticate)
 
-from django_api_admin.models import Author
+from django_api_admin.models import Author, Book, Publisher
 from django_api_admin.options import APIModelAdmin
 from django_api_admin.sites import site
 
@@ -176,3 +176,21 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['site_title'], 'Django site admin')
+
+    def test_autocomplete_view(self):
+        # create an author, and a book
+        author = Author.objects.create(name='Muhammad', age=2, user=self.user)
+        publisher = Publisher.objects.create(name='the daily blob')
+        author.publisher.add(publisher)
+        Book.objects.create(title='Things fall apart', author=author)
+
+        # select a book author by searching for the author using the publisher name of the author
+        url = reverse('api_admin:autocomplete')
+        response = self.client.get(url, {
+            'term': 'blob',
+            'app_label': 'django_api_admin',
+            'model_name': 'book',
+            'field_name': 'author'
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data[0]['name'], 'Muhammad')
