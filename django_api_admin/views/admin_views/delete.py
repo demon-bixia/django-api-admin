@@ -1,5 +1,4 @@
 from django.utils.translation import gettext_lazy as _
-from django.contrib.admin.utils import unquote
 from django.contrib.admin.options import (TO_FIELD_VAR)
 
 from rest_framework import status
@@ -7,6 +6,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 
+from django_api_admin.utils.quote import unquote
 
 
 class DeleteView(APIView):
@@ -33,7 +33,7 @@ class DeleteView(APIView):
             return Response({'detail': msg}, status=status.HTTP_404_NOT_FOUND)
 
         # check delete object permission
-        if not admin.has_delete_permission(request, obj):
+        if not admin.has_delete_permission(request):
             raise PermissionDenied
 
         # log deletion

@@ -2,9 +2,9 @@
 API model admin.
 """
 from django.contrib.admin.options import InlineModelAdmin, ModelAdmin
-from django.contrib.admin.utils import flatten_fieldsets
 from django.contrib.auth import get_permission_codename
 from django.db import router, transaction
+from django.core.exceptions import FieldDoesNotExist
 
 from rest_framework import serializers
 
@@ -25,39 +25,101 @@ class BaseAPIModelAdmin:
     """
     # these are the options used in the change/add forms
     # of the model_admin
+    serializer_class = serializers.ModelSerializer
+
     form_options = [
         'fieldsets', 'fields',
         'save_on_top', 'save_as', 'save_as_continue',
         'view_on_site',
     ]
 
-    def get_serializer_class(self, request, obj=None, changelist=False):
+    def get_serializer_class(self):
         """
         Return a serializer class to be used in the model admin views
         """
         # get all fields in fieldsets
-        fieldsets_fields = flatten_fieldsets(self.get_fieldsets(request, obj))
-        fieldsets_fields.append('pk')
-        # get excluded fields
-        excluded = self.exclude
-        exclude = list(excluded) if excluded is not None else []
+        fields = self.get_fields()
+        fields.append('pk')
+
+        # get the data needed to create the serializer_class for this model
+        data = self.get_serializer_data()
+
         # subtract excluded fields from fieldsets_fields
-        fields = [field for field in fieldsets_fields if field not in exclude]
+        fields = [
+            field for field in fields if field not in data['exclude']]
 
-        # if it's a changelist include all the fields because the hiding happens in the changelist view
-        if changelist:
-            fields = '__all__'
-
-        # dynamically construct a model serializer
-        return type('%sSerializer' % self.model.__name__, (serializers.ModelSerializer,), {
-            'Meta': type('Meta', (object,), {
-                'model': self.model,
-                'fields': fields,
-                'read_only_fields': self.readonly_fields,
-            }),
+        # if the parent model serializer defines a meta class we need to inherit from
+        # that meta class
+        Meta = type("Meta", data['bases'], {
+            'model': self.model,
+            'fields': fields,
+            'read_only_fields': self.readonly_fields,
         })
 
-    def get_permission_map(self, request, obj=None):
+        # dynamically construct a model serializer
+        return type(data['parent_class'])(
+            f'{self.model.__name__}Serializer',
+            (data['parent_class'],),
+            {'Meta': Meta}
+        )
+
+    def get_fields(self):
+        """
+        Hook for specifying fields.
+        """
+        if self.fields:
+            return self.fields
+        data = self.get_serializer_data()
+
+        # if the parent model serializer defines a meta class we need to inherit from
+        # that meta class
+        attrs = {'model': data['model']}
+        if data['fields'] == '__all__':
+            attrs['fields'] = data['fields']
+        else:
+            attrs['exclude'] = data['exclude']
+        # create the meta class
+        Meta = type("Meta", data['bases'], attrs)
+
+        serializer_class = type(data['parent_class'])(
+            data['name'], (data['parent_class'],), {'Meta': Meta})
+        return [*serializer_class().fields, *self.readonly_fields]
+
+    def get_serializer_data(self):
+        # get excluded fields
+        exclude = list(self.exclude) if self.exclude else []
+        if not exclude and hasattr(self.serializer_class, 'Meta') and hasattr(self.serializer_class.Meta, 'exclude'):
+            exclude.extend(self.serializer_class.Meta.exclude)
+
+        # Remove declared serializer fields which are in readonly_fields.
+        new_attrs = dict.fromkeys(
+            f for f in self.readonly_fields if f in self.serializer_class._declared_fields
+        )
+        serializer_class = type(
+            self.serializer_class.__name__, (self.serializer_class,), new_attrs)
+
+        fields = self.fieldsets or self.fields
+
+        if fields is None and not self.serializer_defines_fields():
+            fields = '__all__'
+
+        # If parent form class already has an inner Meta, the Meta we're
+        # creating needs to inherit from the parent's inner meta.
+        bases = (serializer_class.Meta,) if hasattr(
+            serializer_class, "Meta") else ()
+
+        # dynamically construct a model serializer
+        return {
+            'parent_class': serializer_class,
+            'name': f'{self.model.__name__}Serializer',
+            'model': self.model,
+            'bases': bases,
+            'fields': fields,
+            'exclude': exclude,
+            'read_only_fields': self.readonly_fields,
+        }
+
+    def get_permission_map(self, request):
         """
         return a dictionary of user permissions in this module.
         """
@@ -82,22 +144,22 @@ class BaseAPIModelAdmin:
             qs = qs.order_by(*ordering)
         return qs
 
-    def has_add_permission(self, request, obj=None):
+    def has_add_permission(self, request):
         opts = self.opts
         codename = get_permission_codename('add', opts)
         return request.user.has_perm("%s.%s" % (opts.app_label, codename))
 
-    def has_change_permission(self, request, obj=None):
+    def has_change_permission(self, request):
         opts = self.opts
         codename = get_permission_codename('change', opts)
         return request.user.has_perm("%s.%s" % (opts.app_label, codename))
 
-    def has_delete_permission(self, request, obj=None):
+    def has_delete_permission(self, request):
         opts = self.opts
         codename = get_permission_codename('delete', opts)
         return request.user.has_perm("%s.%s" % (opts.app_label, codename))
 
-    def has_view_permission(self, request, obj=None):
+    def has_view_permission(self, request):
         opts = self.opts
         codename_view = get_permission_codename('view', opts)
         codename_change = get_permission_codename('change', opts)
@@ -118,21 +180,21 @@ class BaseAPIModelAdmin:
 
     def list_view(self, request):
         defaults = {
-            'serializer_class': self.get_serializer_class(request),
+            'serializer_class': self.get_serializer_class(),
             'permission_classes': self.admin_site.default_permission_classes,
         }
         return ListView.as_view(**defaults)(request, self)
 
     def detail_view(self, request, object_id):
         defaults = {
-            'serializer_class': self.get_serializer_class(request),
+            'serializer_class': self.get_serializer_class(),
             'permission_classes': self.admin_site.default_permission_classes,
         }
         return DetailView.as_view(**defaults)(request, object_id, self)
 
     def add_view(self, request, **kwargs):
         defaults = {
-            'serializer_class': self.get_serializer_class(request),
+            'serializer_class': self.get_serializer_class(),
             'permission_classes': self.admin_site.default_permission_classes,
         }
         with transaction.atomic(using=router.db_for_write(self.model)):
@@ -140,7 +202,7 @@ class BaseAPIModelAdmin:
 
     def change_view(self, request, object_id, **kwargs):
         defaults = {
-            'serializer_class': self.get_serializer_class(request),
+            'serializer_class': self.get_serializer_class(),
             'permission_classes': self.admin_site.default_permission_classes,
         }
         with transaction.atomic(using=router.db_for_write(self.model)):
@@ -152,6 +214,11 @@ class BaseAPIModelAdmin:
         }
         with transaction.atomic(using=router.db_for_write(self.model)):
             return DeleteView.as_view(**defaults)(request, object_id, self, **kwargs)
+
+    def serializer_defines_fields(self):
+        return hasattr(self.serializer_class, "_meta") and (
+            self.serializer_class._meta.fields is not None or self.serializer_class._meta.exclude is not None
+        )
 
 
 class APIModelAdmin(BaseAPIModelAdmin, ModelAdmin):
@@ -250,11 +317,52 @@ class APIModelAdmin(BaseAPIModelAdmin, ModelAdmin):
         }
         return HistoryView.as_view(**defaults)(request, object_id, self)
 
-    # def to_field_allowed(self, request, to_field):
-        # """
-        # Return True if the model associated with this admin should be
-        # allowed to be referenced by the specified field.
-        # """
+    def to_field_allowed(self, request, to_field):
+        """
+        Return True if the model associated with this admin should be
+        allowed to be referenced by the specified field.
+        """
+        try:
+            field = self.opts.get_field(to_field)
+        except FieldDoesNotExist:
+            return False
+
+        # Always allow referencing the primary key since it's already possible
+        # to get this information from the change view URL.
+        if field.primary_key:
+            return True
+
+        # Allow reverse relationships to models defining m2m fields if they
+        # target the specified field.
+        for many_to_many in self.opts.many_to_many:
+            if many_to_many.m2m_target_field_name() == to_field:
+                return True
+
+        # Make sure at least one of the models registered for this site
+        # references this field through a FK or a M2M relationship.
+        registered_models = set()
+        for model, admin in self.admin_site._registry.items():
+            registered_models.add(model)
+            for inline in admin.inlines:
+                registered_models.add(inline.model)
+
+        related_objects = (
+            f
+            for f in self.opts.get_fields(include_hidden=True)
+            if (f.auto_created and not f.concrete)
+        )
+        for related_object in related_objects:
+            related_model = related_object.related_model
+            remote_field = related_object.field.remote_field
+            if (
+                any(issubclass(model, related_model)
+                    for model in registered_models)
+                and hasattr(remote_field, "get_related_field")
+                and remote_field.get_related_field() == field
+            ):
+                return True
+
+        return False
 
 
 class InlineAPIModelAdmin(BaseAPIModelAdmin, InlineModelAdmin):

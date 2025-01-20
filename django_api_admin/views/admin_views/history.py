@@ -1,12 +1,13 @@
 from django.contrib.admin.models import LogEntry
 from django.utils.translation import gettext_lazy as _
-from django.contrib.admin.utils import unquote
 from django.contrib.admin.options import (get_content_type_for_model)
 
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
+
+from django_api_admin.utils.quote import unquote
 
 
 class HistoryView(APIView):

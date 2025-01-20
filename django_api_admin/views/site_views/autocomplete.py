@@ -46,7 +46,7 @@ class AutoCompleteView(APIView):
         page = admin_site.paginate_queryset(self.queryset, request, view=self)
 
         # serialize data
-        serializer_class = self.model_admin.get_serializer_class(request)
+        serializer_class = self.model_admin.get_serializer_class()
         serializer = serializer_class(page, many=True)
         data = serializer.data
 
@@ -121,9 +121,9 @@ class AutoCompleteView(APIView):
 
         return term, model_admin, source_field, to_field_name
 
-    def has_perm(self, request, obj=None):
+    def has_perm(self, request):
         """Check if user has permission to access the related model."""
-        return self.model_admin.has_view_permission(request, obj=obj)
+        return self.model_admin.has_view_permission(request)
 
     def get_search_results(self, request, queryset, search_term):
         """

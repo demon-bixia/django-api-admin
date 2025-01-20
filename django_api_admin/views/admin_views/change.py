@@ -1,5 +1,4 @@
 from django.utils.translation import gettext_lazy as _
-from django.contrib.admin.utils import unquote
 from django.contrib.admin.options import (TO_FIELD_VAR)
 
 from rest_framework import status
@@ -7,6 +6,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 
+from django_api_admin.utils.quote import unquote
 from django_api_admin.utils.diff_helper import ModelDiffHelper
 from django_api_admin.utils.get_form_fields import get_form_fields
 from django_api_admin.utils.get_form_config import get_form_config
@@ -92,7 +92,7 @@ class ChangeView(APIView):
             return Response({'detail': msg}, status=status.HTTP_404_NOT_FOUND)
 
         # test user change permission in this model.
-        if not model_admin.has_change_permission(request, obj):
+        if not model_admin.has_change_permission(request):
             raise PermissionDenied
 
         # initiate the serializer based on the request method

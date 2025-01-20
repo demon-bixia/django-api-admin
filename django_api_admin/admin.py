@@ -5,7 +5,7 @@ not included in the production branch
 from django.contrib import admin
 
 from .models import Author, Publisher, Book, GuestEntry
-from .options import APIModelAdmin, TabularInlineAPI
+from .options import TabularInlineAPI, APIModelAdmin
 from .sites import site
 from .actions import make_old, make_young
 
@@ -39,10 +39,10 @@ class AuthorAPIAdmin(APIModelAdmin):
     ordering = ('-age',)
 
     raw_id_fields = ('publisher',)
-    fieldsets = (
-        ('Personal Information', {
-         'fields': (('name', 'age'),  'user', 'is_vip', 'gender', 'publisher')}),
-    )
+    # fieldsets = (
+    # ('Personal Information', {
+    #  'fields': (('name', 'age'),  'user', 'is_vip', 'gender', 'publisher')}),
+    # )
     inlines = [APIBookInline, ]
 
     @admin.display(description='is this author old enough')
