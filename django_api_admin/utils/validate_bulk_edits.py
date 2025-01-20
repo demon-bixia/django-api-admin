@@ -27,7 +27,7 @@ def validate_bulk_edits(request, model_admin, obj, operation="create_inlines"):
         # get the fk used to create the inline relationship as well as the serializer class
         fk = _get_foreign_key(inline_admin.parent_model,
                               inline_admin.model, fk_name=inline_admin.fk_name)
-        inline_serializer_class = inline_admin.get_serializer_class(request)
+        inline_serializer_class = inline_admin.get_serializer_class()
 
         # in the case of change view make sure all provided instances are related to the model
         # and preload all instances for updating
@@ -66,7 +66,7 @@ def validate_bulk_edits(request, model_admin, obj, operation="create_inlines"):
                     {"error": "you can't delete an inline that is not related to this model"})
 
             # serialize the instance and add to the the array
-            serializer_class = inline_admin.get_serializer_class(request)
+            serializer_class = inline_admin.get_serializer_class()
             for instance in instances:
                 serializer = serializer_class(instance)
                 deleted_instances.append(serializer.data)

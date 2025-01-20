@@ -264,6 +264,23 @@ class APIModelAdmin(BaseAPIModelAdmin, ModelAdmin):
             choices.append((f'{item.pk}', f'{str(item)}'))
         return choices
 
+    def get_inline_instances(self, request):
+        inline_instances = []
+        for inline_class in self.inlines:
+            inline = inline_class(self.model, self.admin_site)
+            if request:
+                if not (
+                    inline.has_view_or_change_permission(request)
+                    or inline.has_add_permission(request)
+                    or inline.has_delete_permission(request)
+                ):
+                    continue
+                if not inline.has_add_permission(request):
+                    inline.max_num = 0
+            inline_instances.append(inline)
+
+        return inline_instances
+
     def get_urls(self):
         from django.urls import include, path
 

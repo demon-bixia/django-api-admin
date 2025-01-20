@@ -9,7 +9,7 @@ def validate_inline_field_names(request, inlines,  model_admin):
     """
     # generate a list containing names of the fields to add and update model admins.
     inline_admin_field_names = []
-    for inline_admin in model_admin.get_inline_instances(request, obj=None):
+    for inline_admin in model_admin.get_inline_instances(request):
         inline_admin_field_names.append(
             inline_admin.model._meta.verbose_name_plural)
 

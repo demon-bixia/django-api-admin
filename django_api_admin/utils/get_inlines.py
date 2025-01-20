@@ -13,8 +13,8 @@ def get_inlines(request, model_admin, obj=None):
     """
     inlines = []
 
-    for inline_admin in model_admin.get_inline_instances(request, obj=None):
-        serializer_class = inline_admin.get_serializer_class(request)
+    for inline_admin in model_admin.get_inline_instances(request):
+        serializer_class = inline_admin.get_serializer_class()
         fk = _get_foreign_key(inline_admin.parent_model,
                               inline_admin.model, fk_name=inline_admin.fk_name)
 
