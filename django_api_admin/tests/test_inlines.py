@@ -8,6 +8,7 @@ from rest_framework.test import (APITestCase,
 
 from django_api_admin.models import Author, Book, Publisher
 from django_api_admin.sites import site
+from django_api_admin.utils.force_login import force_login
 
 
 UserModel = get_user_model()
@@ -23,7 +24,7 @@ class InlineModelAdminTestCase(APITestCase, URLPatternsTestCase):
         self.user = UserModel.objects.create_superuser(username='admin')
         self.user.set_password('password')
         self.user.save()
-        self.client.force_login(user=self.user)
+        force_login(self.client, self.user)
 
         # create some valid authors
         self.a1 = Author.objects.create(

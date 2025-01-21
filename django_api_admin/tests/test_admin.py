@@ -1,8 +1,6 @@
 """
 model admin tests.
 """
-import json
-
 from django.contrib.auth import get_user_model
 from django.urls import path, reverse
 
@@ -11,6 +9,8 @@ from rest_framework.test import (APIRequestFactory, APITestCase,
 
 from django_api_admin.models import Author, Publisher
 from django_api_admin.sites import site
+
+from django_api_admin.utils.force_login import force_login
 
 
 UserModel = get_user_model()
@@ -30,7 +30,7 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
         self.user.save()
 
         # authenticate the superuser
-        self.client.force_login(user=self.user)
+        force_login(self.client, self.user)
 
         # create some valid authors
         Author.objects.create(name="muhammad", age=20,

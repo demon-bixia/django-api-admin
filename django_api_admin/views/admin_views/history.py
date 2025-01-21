@@ -16,11 +16,12 @@ class HistoryView(APIView):
     """
     permission_classes = []
     serializer_class = None
+    model_admin = None
 
-    def get(self, request, object_id, model_admin):
-        model = model_admin.model
+    def get(self, request, object_id):
+        model = self.model_admin.model
         opts = model._meta
-        obj = model_admin.get_object(request, unquote(object_id))
+        obj = self.model_admin.get_object(request, unquote(object_id))
 
         # if the object does not exist respond with 404 response
         if obj is None:
@@ -31,7 +32,7 @@ class HistoryView(APIView):
             return Response({'detail': msg}, status=status.HTTP_404_NOT_FOUND)
 
         # if user has no change permission on this model then respond permission Denied
-        if not model_admin.has_view_or_change_permission(request, obj):
+        if not self.model_admin.has_view_or_change_permission(request, obj):
             raise PermissionDenied
 
         # Then get the history for this object.
@@ -41,7 +42,7 @@ class HistoryView(APIView):
         ).select_related().order_by('action_time')
 
         # paginate the action_list
-        page = model_admin.admin_site.paginate_queryset(
+        page = self.model_admin.admin_site.paginate_queryset(
             action_list, request, view=self)
 
         # serialize the LogEntry queryset

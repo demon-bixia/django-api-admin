@@ -28,17 +28,16 @@ class HandleActionView(APIView):
         }
     """
     permission_classes = []
-    serializer_class = None
+    model_admin = None
 
-    def get(self):
-        serializer = self.serializer_class()
+    def get(self, request):
+        serializer = self.model_admin.get_action_serializer(request)()
         form_fields = get_form_fields(serializer)
         return Response({'fields': form_fields}, status=status.HTTP_200_OK)
 
-    def post(self, request, model_admin):
-        self.model_admin = model_admin
-
-        serializer = self.serializer_class(data=request.data)
+    def post(self, request):
+        serializer = self.model_admin.get_action_serializer(
+            request)(data=request.data)
         # validate the action selected
         if serializer.is_valid():
             # preform the action on the selected items
@@ -46,7 +45,7 @@ class HandleActionView(APIView):
             select_across = serializer.validated_data.get('select_across')
             func = self.get_actions(request)[action][0]
             try:
-                cl = model_admin.get_changelist_instance(request)
+                cl = self.model_admin.get_changelist_instance(request)
             except IncorrectLookupParameters as e:
                 raise NotFound(str(e))
             queryset = cl.get_queryset(request)
@@ -61,7 +60,7 @@ class HandleActionView(APIView):
                 queryset = queryset.filter(pk__in=selected)
 
             # if the action returns a response
-            response = func(model_admin, request, queryset)
+            response = func(self.model_admin, request, queryset)
 
             if response:
                 return response

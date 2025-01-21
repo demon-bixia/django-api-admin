@@ -22,8 +22,9 @@ class AutoCompleteView(APIView):
     }
     """
     permission_classes = []
+    admin_site = None
 
-    def get(self, request, admin_site):
+    def get(self, request):
         """
         Return a JsonResponse with search results as defined in
         serialize_result(), by default:
@@ -37,13 +38,14 @@ class AutoCompleteView(APIView):
             self.model_admin,
             self.source_field,
             to_field_name,
-        ) = self.process_request(request, admin_site)
+        ) = self.process_request(request)
 
         if not self.has_perm(request):
             raise PermissionDenied
 
         self.queryset = self.get_queryset()
-        page = admin_site.paginate_queryset(self.queryset, request, view=self)
+        page = self.admin_site.paginate_queryset(
+            self.queryset, request, view=self)
 
         # serialize data
         serializer_class = self.model_admin.get_serializer_class()
@@ -57,7 +59,7 @@ class AutoCompleteView(APIView):
 
     def get_queryset(self):
         """Return queryset based on self.get_search_results()."""
-        qs = self.model_admin.get_queryset(self.request)
+        qs = self.model_admin.get_queryset()
         qs = qs.complex_filter(self.source_field.get_limit_choices_to())
         qs, search_use_distinct = self.get_search_results(
             self.request, qs, self.term)
@@ -65,7 +67,7 @@ class AutoCompleteView(APIView):
             qs = qs.distinct()
         return qs
 
-    def process_request(self, request, admin_site):
+    def process_request(self, request):
         """
         Validate request integrity, extract and return request parameters.
 
@@ -102,7 +104,7 @@ class AutoCompleteView(APIView):
             raise ParseError(
                 {'detail': 'unable to locate the related model using source field {source_field.name}'})
         try:
-            model_admin = admin_site._registry[remote_model]
+            model_admin = self.admin_site._registry[remote_model]
         except KeyError:
             raise ParseError(
                 {'detail': 'the remote model is not registered in the admin'})
@@ -116,7 +118,7 @@ class AutoCompleteView(APIView):
             source_field.remote_field, "field_name", remote_model._meta.pk.attname
         )
         to_field_name = remote_model._meta.get_field(to_field_name).attname
-        if not model_admin.to_field_allowed(request, to_field_name):
+        if not model_admin.to_field_allowed(to_field_name):
             raise PermissionDenied
 
         return term, model_admin, source_field, to_field_name

@@ -3,8 +3,11 @@ API model admin.
 """
 from django.contrib.admin.options import InlineModelAdmin, ModelAdmin
 from django.contrib.auth import get_permission_codename
-from django.db import router, transaction
-from django.core.exceptions import FieldDoesNotExist
+from django.db import models
+from django.core.exceptions import FieldDoesNotExist, ValidationError
+from django.utils.safestring import mark_safe
+from django.utils.text import capfirst
+from django.urls import include, path
 
 from rest_framework import serializers
 
@@ -17,6 +20,7 @@ from django_api_admin.views.admin_views.detail import DetailView
 from django_api_admin.views.admin_views.handle_action import HandleActionView
 from django_api_admin.views.admin_views.history import HistoryView
 from django_api_admin.views.admin_views.list import ListView
+from django_api_admin.utils.model_format_dict import model_format_dict
 
 
 class BaseAPIModelAdmin:
@@ -133,13 +137,13 @@ class BaseAPIModelAdmin:
             'has_module_permission': self.has_module_permission(request),
         }
 
-    def get_queryset(self, request):
+    def get_queryset(self, request=None):
         """
         Return a QuerySet of all model instances that can be edited by the
         admin site. This is used by changelist_view.
         """
         qs = self.model._default_manager.get_queryset()
-        ordering = self.get_ordering(request)
+        ordering = self.ordering or ()
         if ordering:
             qs = qs.order_by(*ordering)
         return qs
@@ -178,42 +182,44 @@ class BaseAPIModelAdmin:
     def is_inline(self):
         return isinstance(self, InlineModelAdmin)
 
-    def list_view(self, request):
+    def list_view(self):
         defaults = {
             'serializer_class': self.get_serializer_class(),
             'permission_classes': self.admin_site.default_permission_classes,
+            'model_admin': self,
         }
-        return ListView.as_view(**defaults)(request, self)
+        return ListView.as_view(**defaults)
 
-    def detail_view(self, request, object_id):
+    def detail_view(self):
         defaults = {
             'serializer_class': self.get_serializer_class(),
             'permission_classes': self.admin_site.default_permission_classes,
+            'model_admin': self
         }
-        return DetailView.as_view(**defaults)(request, object_id, self)
+        return DetailView.as_view(**defaults)
 
-    def add_view(self, request, **kwargs):
+    def add_view(self):
         defaults = {
             'serializer_class': self.get_serializer_class(),
             'permission_classes': self.admin_site.default_permission_classes,
+            'model_admin': self,
         }
-        with transaction.atomic(using=router.db_for_write(self.model)):
-            return AddView.as_view(**defaults)(request, self, **kwargs)
+        return AddView.as_view(**defaults)
 
-    def change_view(self, request, object_id, **kwargs):
+    def change_view(self):
         defaults = {
             'serializer_class': self.get_serializer_class(),
             'permission_classes': self.admin_site.default_permission_classes,
+            'model_admin': self,
         }
-        with transaction.atomic(using=router.db_for_write(self.model)):
-            return ChangeView.as_view(**defaults)(request, object_id, self, **kwargs)
+        return ChangeView.as_view(**defaults)
 
-    def delete_view(self, request, object_id, **kwargs):
+    def delete_view(self):
         defaults = {
-            'permission_classes': self.admin_site.default_permission_classes
+            'permission_classes': self.admin_site.default_permission_classes,
+            'model_admin': self
         }
-        with transaction.atomic(using=router.db_for_write(self.model)):
-            return DeleteView.as_view(**defaults)(request, object_id, self, **kwargs)
+        return DeleteView.as_view(**defaults)
 
     def serializer_defines_fields(self):
         return hasattr(self.serializer_class, "_meta") and (
@@ -251,14 +257,27 @@ class APIModelAdmin(BaseAPIModelAdmin, ModelAdmin):
         super().__init__(*args, **kwargs)
         self.view_on_site = False if not self.admin_site.include_view_on_site_view else self.view_on_site
 
+    def get_model_perms(self, request):
+        """
+        Return a dict of all perms for this model. This dict has the keys
+        ``add``, ``change``, ``delete``, and ``view`` mapping to the True/False
+        for each of those actions.
+        """
+        return {
+            "add": self.has_add_permission(request),
+            "change": self.has_change_permission(request),
+            "delete": self.has_delete_permission(request),
+            "view": self.has_view_permission(request),
+        }
+
     def get_action_serializer(self, request):
         return type('%sActionSerializer' % self.__class__.__name__, (ActionSerializer,), {
             'action': serializers.ChoiceField(choices=[*self.get_action_choices(request)]),
-            'selected_ids': serializers.MultipleChoiceField(choices=[*self.get_selected_ids(request)])
+            'selected_ids': serializers.MultipleChoiceField(choices=[*self.get_selected_ids()])
         })
 
-    def get_selected_ids(self, request):
-        queryset = self.get_queryset(request)
+    def get_selected_ids(self):
+        queryset = self.get_queryset()
         choices = []
         for item in queryset:
             choices.append((f'{item.pk}', f'{str(item)}'))
@@ -281,26 +300,92 @@ class APIModelAdmin(BaseAPIModelAdmin, ModelAdmin):
 
         return inline_instances
 
-    def get_urls(self):
-        from django.urls import include, path
+    def get_empty_value_display(self):
+        """
+        Return the empty_value_display set on ModelAdmin or AdminSite.
+        """
+        try:
+            return mark_safe(self.empty_value_display)
+        except AttributeError:
+            return mark_safe(self.admin_site.empty_value_display)
 
+    def _get_base_actions(self):
+        """Return the list of actions, prior to any request-based filtering."""
+        actions = []
+        base_actions = (self.get_action(action)
+                        for action in self.actions or [])
+        # get_action might have returned None, so filter any of those out.
+        base_actions = [action for action in base_actions if action]
+        base_action_names = {name for _, name, _ in base_actions}
+
+        # Gather actions from the admin site first
+        for name, func in self.admin_site.actions:
+            if name in base_action_names:
+                continue
+            description = getattr(func, "short_description",
+                                  capfirst(name.replace("_", " ")))
+            actions.append((func, name, description))
+        # Add actions from this ModelAdmin.
+        actions.extend(base_actions)
+        return actions
+
+    def _filter_actions_by_permissions(self, request, actions):
+        """Filter out any actions that the user doesn't have access to."""
+        filtered_actions = []
+        for action in actions:
+            callable = action[0]
+            if not hasattr(callable, "allowed_permissions"):
+                filtered_actions.append(action)
+                continue
+            permission_checks = (
+                getattr(self, "has_%s_permission" % permission)
+                for permission in callable.allowed_permissions
+            )
+            if any(has_permission(request) for has_permission in permission_checks):
+                filtered_actions.append(action)
+        return filtered_actions
+
+    def get_actions(self, request):
+        """
+        Return a dictionary mapping the names of all actions for this
+        ModelAdmin to a tuple of (callable, name, description) for each action.
+        """
+        # If self.actions is set to None that means actions are disabled on
+        # this page.
+        if self.actions is None:
+            return {}
+        actions = self._filter_actions_by_permissions(
+            request, self._get_base_actions())
+        return {name: (func, name, desc) for func, name, desc in actions}
+
+    def get_action_choices(self, request, default_choices=models.BLANK_CHOICE_DASH):
+        """
+        Return a list of choices for use in a form object.  Each choice is a
+        tuple (name, description).
+        """
+        choices = [] + default_choices
+        for func, name, description in self.get_actions(request).values():
+            choice = (name, description % model_format_dict(self.opts, models))
+            choices.append(choice)
+        return choices
+
+    def get_urls(self):
         info = self.model._meta.app_label, self.model._meta.model_name
-        admin_view = self.admin_site.api_admin_view
 
         urlpatterns = [
-            path('list/', admin_view(self.list_view), name='%s_%s_list' % info),
-            path('changelist/', admin_view(self.changelist_view),
+            path('list/', self.list_view(), name='%s_%s_list' % info),
+            path('changelist/', self.changelist_view(),
                  name='%s_%s_changelist' % info),
-            path('perform_action/', admin_view(self.handle_action_view),
+            path('perform_action/', self.handle_action_view(),
                  name='%s_%s_perform_action' % info),
-            path('add/', admin_view(self.add_view), name='%s_%s_add' % info),
-            path('<path:object_id>/detail/', admin_view(self.detail_view),
+            path('add/', self.add_view(), name='%s_%s_add' % info),
+            path('<path:object_id>/detail/', self.detail_view(),
                  name='%s_%s_detail' % info),
-            path('<path:object_id>/delete/', admin_view(self.delete_view),
+            path('<path:object_id>/delete/', self.delete_view(),
                  name='%s_%s_delete' % info),
             path('<path:object_id>/history/',
-                 admin_view(self.history_view), name='%s_%s_history' % info),
-            path('<path:object_id>/change/', admin_view(self.change_view),
+                 self.history_view(), name='%s_%s_history' % info),
+            path('<path:object_id>/change/', self.change_view(),
                  name='%s_%s_change' % info),
         ]
 
@@ -314,27 +399,7 @@ class APIModelAdmin(BaseAPIModelAdmin, ModelAdmin):
             ])
         return urlpatterns
 
-    def changelist_view(self, request, **kwargs):
-        defaults = {
-            'permission_classes': self.admin_site.default_permission_classes
-        }
-        return ChangeListView.as_view(**defaults)(request, self)
-
-    def handle_action_view(self, request):
-        defaults = {
-            'permission_classes': self.admin_site.default_permission_classes,
-            'serializer_class': self.get_action_serializer(request)
-        }
-        return HandleActionView.as_view(**defaults)(request, self)
-
-    def history_view(self, request, object_id, extra_context=None):
-        defaults = {
-            'permission_classes': self.admin_site.default_permission_classes,
-            'serializer_class': self.admin_site.log_entry_serializer,
-        }
-        return HistoryView.as_view(**defaults)(request, object_id, self)
-
-    def to_field_allowed(self, request, to_field):
+    def to_field_allowed(self, to_field):
         """
         Return True if the model associated with this admin should be
         allowed to be referenced by the specified field.
@@ -381,6 +446,28 @@ class APIModelAdmin(BaseAPIModelAdmin, ModelAdmin):
 
         return False
 
+    def changelist_view(self):
+        defaults = {
+            'permission_classes': self.admin_site.default_permission_classes,
+            'model_admin': self
+        }
+        return ChangeListView.as_view(**defaults)
+
+    def handle_action_view(self):
+        defaults = {
+            'permission_classes': self.admin_site.default_permission_classes,
+            'model_admin': self
+        }
+        return HandleActionView.as_view(**defaults)
+
+    def history_view(self):
+        defaults = {
+            'permission_classes': self.admin_site.default_permission_classes,
+            'serializer_class': self.admin_site.log_entry_serializer,
+            'model_admin': self
+        }
+        return HistoryView.as_view(**defaults)
+
 
 class InlineAPIModelAdmin(BaseAPIModelAdmin, InlineModelAdmin):
     """
@@ -391,12 +478,22 @@ class InlineAPIModelAdmin(BaseAPIModelAdmin, InlineModelAdmin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def get_object(self, request, object_id):
+    def get_object(self, request, object_id, from_field=None):
+        """
+        Return an instance matching the field and value provided, the primary
+        key is used if no field is provided. Return ``None`` if no match is
+        found or the object_id fails validation.
+        """
         queryset = self.get_queryset(request)
         model = queryset.model
+        field = (
+            model._meta.pk if from_field is None else model._meta.get_field(
+                from_field)
+        )
         try:
-            return queryset.get(pk=object_id)
-        except model.DoesNotExist:
+            object_id = field.to_python(object_id)
+            return queryset.get(**{field.name: object_id})
+        except (model.DoesNotExist, ValidationError, ValueError):
             return None
 
     def get_urls(self):
@@ -404,22 +501,21 @@ class InlineAPIModelAdmin(BaseAPIModelAdmin, InlineModelAdmin):
 
         info = (self.parent_model._meta.app_label, self.parent_model._meta.model_name,
                 self.opts.app_label, self.opts.model_name)
-        admin_view = self.admin_site.api_admin_view
 
         return [
-            path('list/', admin_view(self.list_view),
+            path('list/', self.list_view(),
                  name='%s_%s_%s_%s_list' % info),
-            path('add/', admin_view(self.add_view),
+            path('add/', self.add_view(),
                  name='%s_%s_%s_%s_add' % info),
-            path('<path:object_id>/detail/', admin_view(self.detail_view),
+            path('<path:object_id>/detail/', self.detail_view(),
                  name='%s_%s_%s_%s_detail' % info),
-            path('<path:object_id>/change/', admin_view(self.change_view),
+            path('<path:object_id>/change/', self.change_view(),
                  name='%s_%s_%s_%s_change' % info),
-            path('<path:object_id>/delete/', admin_view(self.delete_view),
+            path('<path:object_id>/delete/', self.delete_view(),
                  name='%s_%s_%s_%s_delete' % info),
         ]
 
-    @property
+    @ property
     def urls(self):
         return self.get_urls()
 

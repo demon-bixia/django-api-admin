@@ -1,9 +1,12 @@
 from django.contrib.auth import get_user_model
 from django.urls import path, reverse, NoReverseMatch
+
 from rest_framework.test import APITestCase, URLPatternsTestCase
 
-from .admin import site
-from .models import Person
+from custom_django_api_admin.admin import site
+from custom_django_api_admin.models import Person
+
+from django_api_admin.utils.force_login import force_login
 
 
 site.register(Person)
@@ -22,7 +25,7 @@ class CustomAPITestCase(APITestCase, URLPatternsTestCase):
         self.user.save()
 
         # authenticate the superuser
-        self.client.force_login(self.user)
+        force_login(self.client, self.user)
 
     def test_site_name(self):
         self.assertEqual(site.name, 'custom_api_admin')

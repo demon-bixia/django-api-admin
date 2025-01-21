@@ -13,7 +13,7 @@ class UserSerializer(serializers.ModelSerializer):
         exclude = ('password',)
 
 
-class LoginSerializer(serializers.Serializer):
+class ObtainTokenSerializer(serializers.Serializer):
     """
     Validates login credentials and generates token.
     """

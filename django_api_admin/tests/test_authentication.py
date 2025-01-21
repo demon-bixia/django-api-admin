@@ -10,6 +10,7 @@ from rest_framework.test import (APITestCase,
                                  URLPatternsTestCase)
 
 from django_api_admin.sites import site
+from django_api_admin.utils.force_login import force_login
 
 UserModel = get_user_model()
 renderer = JSONRenderer()
@@ -31,13 +32,13 @@ class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
         user.set_password('password')
         user.save()
 
-        url = reverse('api_admin:login')
+        url = reverse('api_admin:token_obtain_pair')
         response = self.client.post(
             url, {'username': user.username, 'password': 'password'})
         self.assertEqual(response.status_code, 403)
 
     def test_staff_user_login(self):
-        url = reverse('api_admin:login')
+        url = reverse('api_admin:token_obtain_pair')
         response = self.client.post(
             url, {'username': self.admin_user.username, 'password': 'password'})
         self.assertEqual(response.status_code, 200)
@@ -47,20 +48,13 @@ class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
         user.set_password('password')
         user.save()
 
-        url = reverse('api_admin:login')
+        url = reverse('api_admin:token_obtain_pair')
         response = self.client.get(url)
         self.assertNotEqual(response.status_code, 403)
 
-    def test_logout_user_logged_in(self):
-        self.client.force_login(user=self.admin_user)
-        url = reverse('api_admin:logout')
-        response = self.client.post(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertIsNotNone(response.data.get('detail', None))
-
     def test_password_change(self):
         url = reverse('api_admin:password_change')
-        self.client.force_login(user=self.admin_user)
+        force_login(self.client, self.admin_user)
         response = self.client.post(url, {'old_password': 'password', 'new_password1': 'new_password',
                                           'new_password2': 'new_password'})
         self.assertEqual(response.status_code, 200)
@@ -68,10 +62,9 @@ class AuthenticationTestCase(APITestCase, URLPatternsTestCase):
 
     def test_password_change_password_mismatch(self):
         url = reverse('api_admin:password_change')
-        self.client.force_login(user=self.admin_user)
+        force_login(self.client, self.admin_user)
         response = self.client.post(url, {'old_password': 'password', 'new_password1': 'something',
                                           'new_password2': 'something else'})
         self.assertEqual(response.status_code, 400)
         self.assertEqual(
             response.data['non_field_errors'][0].code, 'password_mismatch')
-

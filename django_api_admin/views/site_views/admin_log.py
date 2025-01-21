@@ -15,8 +15,9 @@ class AdminLogView(APIView):
     pagination_class = None
     permission_classes = []
     ordering_fields = ['action_time', '-action_time']
+    admin_site = None
 
-    def get(self, request, admin_site):
+    def get(self, request):
         from django.contrib.admin.models import LogEntry
 
         queryset = LogEntry.objects.all()

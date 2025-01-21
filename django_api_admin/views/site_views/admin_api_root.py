@@ -17,11 +17,6 @@ class AdminAPIRootView(APIView):
         data = dict()
 
         for url in self.root_urls:
-            if request.user.is_authenticated and url.name == 'login':
-                continue
-            elif not request.user.is_authenticated and url.name in ('logout', 'password_change'):
-                continue
-
             data[url.name] = reverse(
                 namespace + ':' + url.name, args=args, kwargs=kwargs, request=request)
 

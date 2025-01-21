@@ -69,10 +69,11 @@ class ChangeListView(APIView):
     }
     """
     permission_classes = []
+    model_admin = None
 
-    def get(self, request, model_admin):
+    def get(self, request):
         try:
-            cl = model_admin.get_changelist_instance(request)
+            cl = self.model_admin.get_changelist_instance(request)
         except IncorrectLookupParameters as e:
             raise NotFound(str(e))
         columns = self.get_columns(request, cl)
@@ -191,7 +192,7 @@ class ChangeListView(APIView):
         return config
 
     def get_fields_list(self, request, cl):
-        list_display = cl.model_admin.get_list_display(request)
+        list_display = cl.model_admin.list_display
         exclude = cl.model_admin.exclude or tuple()
         fields_list = tuple(
             filter(lambda item: item not in exclude, list_display))

@@ -15,6 +15,7 @@ from rest_framework.test import (APIRequestFactory, APITestCase,
 from django_api_admin.models import Author, Book, Publisher
 from django_api_admin.options import APIModelAdmin
 from django_api_admin.sites import site
+from django_api_admin.utils.force_login import force_login
 
 UserModel = get_user_model()
 renderer = JSONRenderer()
@@ -40,7 +41,7 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
         self.user.save()
 
         # authenticate the superuser
-        self.client.force_login(self.user)
+        force_login(self.client, self.user)
 
     def test_registering_models(self):
         from django.db import models
@@ -112,7 +113,7 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
         user.is_staff = False
         user.save()
 
-        self.client.force_login(user)
+        force_login(self.client, user)
 
         # test if app_index denies permission
         app_label = Author._meta.app_label
@@ -122,10 +123,6 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
         # test if index denies permission
         url = reverse('api_admin:index')
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 403)
-        # test if logout denies permission
-        url = reverse('api_admin:logout')
-        response = self.client.post(url)
         self.assertEqual(response.status_code, 403)
         # test if password change denies permission
         url = reverse('api_admin:password_change')

@@ -11,9 +11,10 @@ class AppIndexView(APIView):
     """
 
     permission_classes = []
+    admin_site = None
 
-    def get(self, request, app_label, admin_site):
-        app_dict = admin_site._build_app_dict(request, app_label)
+    def get(self, request, app_label):
+        app_dict = self.admin_site._build_app_dict(request, app_label)
 
         if not app_dict:
             return Response({'detail': _('The requested admin page does not exist.')},

@@ -1,7 +1,6 @@
 """
 Models used for testing not included in the production branch.
 """
-
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.urls import reverse
