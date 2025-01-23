@@ -1,15 +1,11 @@
 from django.apps import apps
-from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import FieldDoesNotExist
-from django.utils.text import smart_split, unescape_string_literal
 
 from rest_framework.exceptions import PermissionDenied, ParseError
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-
-from django_api_admin.utils.lookup_spawns_duplicates import lookup_spawns_duplicates
 
 
 class AutoCompleteView(APIView):
@@ -58,11 +54,11 @@ class AutoCompleteView(APIView):
         )
 
     def get_queryset(self):
-        """Return queryset based on self.get_search_results()."""
+        """Return queryset based on model_admin.get_search_results()."""
         qs = self.model_admin.get_queryset()
         qs = qs.complex_filter(self.source_field.get_limit_choices_to())
-        qs, search_use_distinct = self.get_search_results(
-            self.request, qs, self.term)
+        qs, search_use_distinct = self.model_admin.get_search_results(
+            qs, self.term)
         if search_use_distinct:
             qs = qs.distinct()
         return qs
@@ -126,60 +122,3 @@ class AutoCompleteView(APIView):
     def has_perm(self, request):
         """Check if user has permission to access the related model."""
         return self.model_admin.has_view_permission(request)
-
-    def get_search_results(self, request, queryset, search_term):
-        """
-        Return a tuple containing a queryset to implement the search
-        and a boolean indicating if the results may contain duplicates.
-        """
-        # Apply keyword searches.
-        def construct_search(field_name):
-            if field_name.startswith("^"):
-                return "%s__istartswith" % field_name[1:]
-            elif field_name.startswith("="):
-                return "%s__iexact" % field_name[1:]
-            elif field_name.startswith("@"):
-                return "%s__search" % field_name[1:]
-            # Use field_name if it includes a lookup.
-            opts = queryset.model._meta
-            lookup_fields = field_name.split("__")
-            # Go through the fields, following all relations.
-            prev_field = None
-            for path_part in lookup_fields:
-                if path_part == "pk":
-                    path_part = opts.pk.name
-                try:
-                    field = opts.get_field(path_part)
-                except FieldDoesNotExist:
-                    # Use valid query lookups.
-                    if prev_field and prev_field.get_lookup(path_part):
-                        return field_name
-                else:
-                    prev_field = field
-                    if hasattr(field, "path_infos"):
-                        # Update opts to follow the relation.
-                        opts = field.path_infos[-1].to_opts
-            # Otherwise, use the field with icontains.
-            return "%s__icontains" % field_name
-
-        may_have_duplicates = False
-        search_fields = self.model_admin.search_fields
-        if search_fields and search_term:
-            orm_lookups = [
-                construct_search(str(search_field)) for search_field in search_fields
-            ]
-            term_queries = []
-            for bit in smart_split(search_term):
-                if bit.startswith(('"', "'")) and bit[0] == bit[-1]:
-                    bit = unescape_string_literal(bit)
-                or_queries = Q.create(
-                    [(orm_lookup, bit) for orm_lookup in orm_lookups],
-                    connector=Q.OR,
-                )
-                term_queries.append(or_queries)
-            queryset = queryset.filter(Q.create(term_queries))
-            may_have_duplicates |= any(
-                lookup_spawns_duplicates(self.model_admin.opts, search_spec)
-                for search_spec in orm_lookups
-            )
-        return queryset, may_have_duplicates

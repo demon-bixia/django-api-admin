@@ -1,5 +1,6 @@
 """ 
-views used to test the not included for production.
+views used to test the form fields in the client and 
+is not included in production.
 """
 import datetime
 import json

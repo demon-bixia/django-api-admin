@@ -1,8 +1,8 @@
 from django.contrib.admin.models import LogEntry
-from django.contrib.auth import get_user_model, authenticate
+from django.contrib.auth import authenticate, get_user_model
 from django.utils.translation import gettext_lazy as _
-from rest_framework import serializers
 
+from rest_framework import serializers
 
 UserModel = get_user_model()
 
@@ -134,3 +134,10 @@ class ActionSerializer(serializers.Serializer):
     action = serializers.ChoiceField(choices=[("", "---------"), ])
     selected_ids = serializers.MultipleChoiceField(choices=[('', '')])
     select_across = serializers.BooleanField(required=False, default=0)
+
+
+class ChangeListSearchSerializer(serializers.Serializer):
+    """
+    validates the changelist querystring
+    """
+    q = serializers.CharField(required=False, trim_whitespace=False)

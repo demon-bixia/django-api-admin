@@ -1,8 +1,6 @@
 from django.db.models import Model
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import FieldDoesNotExist, ObjectDoesNotExist
-from django.contrib.admin.utils import label_for_field, lookup_field
-from django.contrib.admin.options import (IncorrectLookupParameters)
 
 from rest_framework import status
 from rest_framework.views import APIView
@@ -11,6 +9,9 @@ from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
 
 from django_api_admin.utils.get_form_fields import get_form_fields
+from django_api_admin.utils.label_for_field import label_for_field
+from django_api_admin.utils.lookup_field import lookup_field
+from django_api_admin.exceptions import IncorrectLookupParameters
 
 
 class ChangeListView(APIView):
@@ -126,9 +127,10 @@ class ChangeListView(APIView):
                         model_field = result._meta.get_field(field_name)
                         choices = getattr(model_field, 'choices', None)
                         if choices:
-                            result_repr = [
-                                choice for choice in choices if choice[0] == value
-                            ][0][1]
+                            repr_list = [
+                                choice for choice in choices if choice[0] == value]
+                            result_repr = repr_list[0][1] if len(
+                                repr_list) > 1 else str(value)
                     except FieldDoesNotExist:
                         pass
 
@@ -178,8 +180,7 @@ class ChangeListView(APIView):
 
         # a dict of serializer fields attributes for every field in list editable
         editing_fields = {}
-        serializer_class = cl.model_admin.get_serializer_class(
-            request, changelist=True)
+        serializer_class = cl.model_admin.get_serializer_class()
         serializer = serializer_class()
         form_fields = get_form_fields(serializer)
 

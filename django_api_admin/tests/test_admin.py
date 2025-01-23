@@ -1,6 +1,8 @@
 """
 model admin tests.
 """
+from datetime import datetime
+
 from django.contrib.auth import get_user_model
 from django.urls import path, reverse
 
@@ -33,7 +35,7 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
         force_login(self.client, self.user)
 
         # create some valid authors
-        Author.objects.create(name="muhammad", age=20,
+        Author.objects.create(name="muhammad", age=60,
                               is_vip=True, user_id=self.user.pk)
         Author.objects.create(name="Ali", age=20,
                               is_vip=False, user_id=self.user.pk)
@@ -210,3 +212,20 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data['action_list']), 1)
+
+    def test_changelist_view(self):
+        current_date = datetime.now()
+
+        date_hierarchy = f"date_joined__day={current_date.day}&date_joined__month={
+            current_date.month}&date_joined__year={current_date.year}"
+        ordering = "o=1.-2"
+        search = "q=muhammad"
+        filter = "is_vip__exact=1"
+        view_name = f"api_admin:{self.author_info[0]}_{
+            self.author_info[1]}_changelist"
+        url = f"{reverse(view_name)}?{date_hierarchy}&{filter}&{
+            ordering}&{search}"
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['rows'][0]['cells']['name'], 'muhammad')

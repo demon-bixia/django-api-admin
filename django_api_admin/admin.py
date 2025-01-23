@@ -4,10 +4,11 @@ not included in the production branch
 """
 from django.contrib import admin
 
-from .models import Author, Publisher, Book, GuestEntry
-from .options import TabularInlineAPI, APIModelAdmin
-from .sites import site
-from .actions import make_old, make_young
+from django_api_admin.models import Author, Publisher, Book, GuestEntry
+from django_api_admin.admins.inline_admin import TabularInlineAPI
+from django_api_admin.admins.model_admin import APIModelAdmin
+from django_api_admin.sites import site
+from django_api_admin.actions import make_old, make_young
 
 
 class APIBookInline(TabularInlineAPI):
@@ -66,6 +67,7 @@ class AuthorAdmin(admin.ModelAdmin):
     list_editable = ('age',)
     list_per_page = 6
     empty_value_display = '-'
+    search_fields = ('name',)
 
     # filter_horizontal = ('publisher')
 
