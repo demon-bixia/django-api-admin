@@ -26,7 +26,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # my apps
     'django_api_admin.apps.DjangoApiAdminConfig',
-    'custom_django_api_admin.apps.CustomDjangoApiAdminConfig',
+    'test_django_api_admin.apps.TestDjangoApiAdminConfig',
     # 3rd party apps
     'corsheaders',
     'rest_framework',

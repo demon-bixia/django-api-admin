@@ -14,7 +14,10 @@ from django_api_admin.views.admin_views.handle_action import HandleActionView
 from django_api_admin.views.admin_views.history import HistoryView
 from django_api_admin.utils.model_format_dict import model_format_dict
 from django_api_admin.utils.lookup_spawns_duplicates import lookup_spawns_duplicates
+from django_api_admin.utils.get_content_type_for_model import get_content_type_for_model
 from django_api_admin.changelist import ChangeList
+
+from django_api_admin.models import DELETION, ADDITION, CHANGE, LogEntry
 
 
 class APIModelAdmin(BaseAPIModelAdmin, ModelAdmin):
@@ -358,3 +361,48 @@ class APIModelAdmin(BaseAPIModelAdmin, ModelAdmin):
                 for search_spec in orm_lookups
             )
         return queryset, may_have_duplicates
+
+    def log_addition(self, request, obj, message):
+        """
+        Log that an object has been successfully added.
+
+        The default implementation creates an admin LogEntry object.
+        """
+        return LogEntry.objects.log_action(
+            user_id=request.user.pk,
+            content_type_id=get_content_type_for_model(obj).pk,
+            object_id=obj.pk,
+            object_repr=str(obj),
+            action_flag=ADDITION,
+            change_message=message,
+        )
+
+    def log_change(self, request, obj, message):
+        """
+        Log that an object has been successfully changed.
+
+        The default implementation creates an admin LogEntry object.
+        """
+        return LogEntry.objects.log_action(
+            user_id=request.user.pk,
+            content_type_id=get_content_type_for_model(obj).pk,
+            object_id=obj.pk,
+            object_repr=str(obj),
+            action_flag=CHANGE,
+            change_message=message,
+        )
+
+    def log_deletion(self, request, obj, object_repr):
+        """
+        Log that an object will be deleted. Note that this method must be
+        called before the deletion.
+
+        The default implementation creates an admin LogEntry object.
+        """
+        return LogEntry.objects.log_action(
+            user_id=request.user.pk,
+            content_type_id=get_content_type_for_model(obj).pk,
+            object_id=obj.pk,
+            object_repr=object_repr,
+            action_flag=DELETION,
+        )

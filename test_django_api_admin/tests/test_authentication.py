@@ -9,7 +9,7 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.test import (APITestCase,
                                  URLPatternsTestCase)
 
-from django_api_admin.sites import site
+from test_django_api_admin.admin import site
 from django_api_admin.utils.force_login import force_login
 
 UserModel = get_user_model()

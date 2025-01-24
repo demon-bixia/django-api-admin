@@ -3,12 +3,31 @@ Test admins are used in tests.py to test django_api_admin.
 not included in the production branch
 """
 from django.contrib import admin
+from django.urls import path
 
-from django_api_admin.models import Author, Publisher, Book, GuestEntry
+from django_api_admin.sites import APIAdminSite
+from test_django_api_admin import views as custom_api_views
+from test_django_api_admin.models import Author, Publisher, Book, GuestEntry
 from django_api_admin.admins.inline_admin import TabularInlineAPI
 from django_api_admin.admins.model_admin import APIModelAdmin
-from django_api_admin.sites import site
-from django_api_admin.actions import make_old, make_young
+from test_django_api_admin.actions import make_old, make_young
+
+
+class CustomAPIAdminSite(APIAdminSite):
+    include_root_view = False
+    include_view_on_site_view = True
+
+    def hello_world_view(self, request):
+        return custom_api_views.HelloWorldView.as_view()(request)
+
+    def get_urls(self):
+        urlpatterns = super(CustomAPIAdminSite, self).get_urls()
+        urlpatterns.append(
+            path('hello_world/', self.hello_world_view, name='hello'))
+        return urlpatterns
+
+
+site = CustomAPIAdminSite(name='api_admin', include_auth=True)
 
 
 class APIBookInline(TabularInlineAPI):

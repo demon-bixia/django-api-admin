@@ -12,9 +12,9 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.test import (APIRequestFactory, APITestCase,
                                  URLPatternsTestCase, force_authenticate)
 
-from django_api_admin.models import Author, Book, Publisher
-from django_api_admin.options import APIModelAdmin
-from django_api_admin.sites import site
+from test_django_api_admin.models import Author, Book, Publisher
+from django_api_admin.admins.model_admin import APIModelAdmin
+from test_django_api_admin.admin import site
 from django_api_admin.utils.force_login import force_login
 
 UserModel = get_user_model()
@@ -137,7 +137,7 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
 
             # test if view_on_site view works
             content_type_id = ContentType.objects.get(
-                app_label='django_api_admin', model='author').id
+                app_label=Author._meta.app_label, model=Author._meta.verbose_name).id
             object_id = Author.objects.first().id
             url = reverse('api_admin:view_on_site', kwargs={
                           'content_type_id': content_type_id, 'object_id': object_id})
@@ -185,9 +185,9 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
         url = reverse('api_admin:autocomplete')
         response = self.client.get(url, {
             'term': 'blob',
-            'app_label': 'django_api_admin',
-            'model_name': 'book',
-            'field_name': 'author'
+            'app_label': Author._meta.app_label,
+            'model_name': Book._meta.verbose_name,
+            'field_name': Author._meta.verbose_name
         })
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data[0]['name'], 'Muhammad')

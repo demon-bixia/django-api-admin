@@ -3,8 +3,8 @@ from django.urls import path, reverse, NoReverseMatch
 
 from rest_framework.test import APITestCase, URLPatternsTestCase
 
-from custom_django_api_admin.admin import site
-from custom_django_api_admin.models import Person
+from test_django_api_admin.admin import site
+from test_django_api_admin.models import Person
 
 from django_api_admin.utils.force_login import force_login
 
@@ -28,7 +28,7 @@ class CustomAPITestCase(APITestCase, URLPatternsTestCase):
         force_login(self.client, self.user)
 
     def test_site_name(self):
-        self.assertEqual(site.name, 'custom_api_admin')
+        self.assertEqual(site.name, 'api_admin')
 
     def test_index_view(self):
         # test if the index view works in a custom admin site

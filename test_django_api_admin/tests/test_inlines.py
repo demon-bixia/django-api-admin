@@ -3,11 +3,12 @@ inline admins views.
 """
 from django.contrib.auth import get_user_model
 from django.urls import path, reverse
+
 from rest_framework.test import (APITestCase,
                                  URLPatternsTestCase)
 
-from django_api_admin.models import Author, Book, Publisher
-from django_api_admin.sites import site
+from test_django_api_admin.models import Author, Book, Publisher
+from test_django_api_admin.admin import site
 from django_api_admin.utils.force_login import force_login
 
 

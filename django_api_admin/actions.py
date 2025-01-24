@@ -37,15 +37,3 @@ def delete_selected(modeladmin, request, queryset):
     queryset.delete()
     msg = _(f"Successfully deleted {n} {model_ngettext(modeladmin.opts, n)}.")
     return Response({'detail': msg}, status=status.HTTP_200_OK)
-
-
-@action(description='make all authors old')
-def make_old(model_admin, request, queryset):
-    queryset.update(age=60)
-    return Response({'detail': 'All select authors are old now'}, status=status.HTTP_200_OK)
-
-
-@action(description='make all authors young')
-def make_young(model_admin, request, queryset):
-    queryset.update(age=1)
-    return Response({'detail': 'All select authors are young now'}, status=status.HTTP_200_OK)
