@@ -6,6 +6,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from django_api_admin.models import LogEntry
+
 
 class AdminLogView(APIView):
     """
@@ -18,8 +20,6 @@ class AdminLogView(APIView):
     admin_site = None
 
     def get(self, request):
-        from django.contrib.admin.models import LogEntry
-
         queryset = LogEntry.objects.all()
 
         # order the queryset

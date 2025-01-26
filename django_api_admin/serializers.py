@@ -1,8 +1,8 @@
-from django.contrib.admin.models import LogEntry
 from django.contrib.auth import authenticate, get_user_model
 from django.utils.translation import gettext_lazy as _
-
 from rest_framework import serializers
+
+from django_api_admin.models import LogEntry
 
 UserModel = get_user_model()
 
@@ -70,7 +70,7 @@ class ObtainTokenSerializer(serializers.Serializer):
 
 class LogEntrySerializer(serializers.ModelSerializer):
     """
-    default django.contrib.admin.models.LogEntry serializer.
+    default LogEntry serializer.
     """
 
     class Meta:

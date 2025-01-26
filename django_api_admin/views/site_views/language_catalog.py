@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 class LanguageCatalogView(APIView):
     """
-      Returns json object with django.contrib.admin i18n translation catalog
+      Returns json object with i18n translation catalog
       to be used by a client site javascript library
     """
     permission_classes = []

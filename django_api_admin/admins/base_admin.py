@@ -1,13 +1,15 @@
-from django.contrib.admin.options import InlineModelAdmin
-from django.contrib.auth import get_permission_codename
+import copy
 
-from rest_framework import serializers
+from django.contrib.auth import get_permission_codename
+from django.utils.translation import gettext as _
 
 from django_api_admin.views.admin_views.add import AddView
 from django_api_admin.views.admin_views.change import ChangeView
 from django_api_admin.views.admin_views.delete import DeleteView
 from django_api_admin.views.admin_views.detail import DetailView
 from django_api_admin.views.admin_views.list import ListView
+
+from rest_framework.serializers import ModelSerializer
 
 
 class BaseAPIModelAdmin:
@@ -16,18 +18,37 @@ class BaseAPIModelAdmin:
     """
     # these are the options used in the change/add forms
     # of the model_admin
-    serializer_class = serializers.ModelSerializer
-
     form_options = [
         'fieldsets', 'fields',
         'save_on_top', 'save_as', 'save_as_continue',
-        'view_on_site',
+        'view_on_site', 'radio_fields', 'prepopulated_fields',
+        'filter_horizontal', 'filter_vertical', 'raw_id_fields',
+        'autocomplete_fields'
     ]
+    autocomplete_fields = ()
+    raw_id_fields = ()
+    fields = None
+    exclude = None
+    fieldsets = None
+    serializer_class = ModelSerializer
+    filter_vertical = ()
+    filter_horizontal = ()
+    radio_fields = {}
+    prepopulated_fields = {}
+    serializerfield_overrides = {}
+    readonly_fields = ()
+    ordering = None
+    sortable_by = None
+    view_on_site = True
+    show_full_result_count = True
+    # checks_class = BaseModelAdminChecks
 
     def get_serializer_class(self):
         """
         Return a serializer class to be used in the model admin views
         """
+        attrs = dict()
+
         # get all fields in fieldsets
         fields = self.get_fields()
         fields.append('pk')
@@ -47,11 +68,22 @@ class BaseAPIModelAdmin:
             'read_only_fields': self.readonly_fields,
         })
 
+        attrs["Meta"] = Meta
+
+        # if the serializer method
+        if isinstance(self.serializer_class, ModelSerializer):
+            # merge serializerfield_overrides with the ModelSerializer.serializer_field_mapping
+            overrides = copy.deepcopy(ModelSerializer.serializer_field_mapping)
+            for key, value in self.serializerfield_overrides.items():
+                overrides[key] = (value)
+            self.serializerfield_overrides = overrides
+            attrs['serializer_field_mapping'] = self.serializerfield_overrides
+
         # dynamically construct a model serializer
         return type(data['parent_class'])(
             f'{self.model.__name__}Serializer',
             (data['parent_class'],),
-            {'Meta': Meta}
+            attrs
         )
 
     def get_fields(self):
@@ -110,6 +142,23 @@ class BaseAPIModelAdmin:
             'read_only_fields': self.readonly_fields,
         }
 
+    def serializerfield_for_dbfield(self, db_field, **kwargs):
+        """
+        Hook for specifying the form Field instance for a given database Field
+        instance.
+
+        If kwargs are given, they're passed to the form Field's constructor.
+        """
+
+        # If we've got overrides for the serializerfield defined, use 'em. **kwargs
+        # passed to serializerfield_for_dbfield override the defaults.
+        for klass in db_field.__class__.mro():
+            if klass in self.serializerfield_overrides:
+                kwargs = {
+                    **copy.deepcopy(self.serializerfield_overrides[klass]), **kwargs
+                }
+                return db_field.formfield(**kwargs)
+
     def get_permission_map(self, request):
         """
         return a dictionary of user permissions in this module.
@@ -167,7 +216,8 @@ class BaseAPIModelAdmin:
 
     @property
     def is_inline(self):
-        return isinstance(self, InlineModelAdmin)
+        from django_api_admin.admins.inline_admin import InlineAPIModelAdmin
+        return isinstance(self, InlineAPIModelAdmin)
 
     def get_list_view(self):
         defaults = {

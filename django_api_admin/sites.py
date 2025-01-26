@@ -1,23 +1,25 @@
 """
 API admin site.
 """
+from weakref import WeakSet
+
 from django.apps import apps
-from django.contrib.admin import AdminSite
-from django.contrib.admin.sites import AlreadyRegistered
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.contrib.contenttypes import views as contenttype_views
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.base import ModelBase
-from django.urls import NoReverseMatch, reverse, URLPattern, include, path, re_path
+from django.urls import (NoReverseMatch, URLPattern, include, path, re_path,
+                         reverse)
 from django.utils.text import capfirst
-from django.contrib.contenttypes import views as contenttype_views
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 
 from django_api_admin import actions
 from django_api_admin import serializers as api_serializers
 from django_api_admin.admins.model_admin import APIModelAdmin
 from django_api_admin.pagination import AdminLogPagination, AdminResultsListPagination
 from django_api_admin.permissions import IsAdminUser
-
 from django_api_admin.views.site_views.admin_api_root import AdminAPIRootView
 from django_api_admin.views.site_views.admin_log import AdminLogView
 from django_api_admin.views.site_views.app_index import AppIndexView
@@ -28,14 +30,15 @@ from django_api_admin.views.site_views.obtain_token import ObtainTokenView
 from django_api_admin.views.site_views.password_change import PasswordChangeView
 from django_api_admin.views.site_views.site_context import SiteContextView
 from django_api_admin.views.site_views.user_information import UserInformation
+from django_api_admin.exceptions import AlreadyRegistered, NotRegistered
 
 from rest_framework_simplejwt.views import TokenRefreshView
 
-
 UserModel = get_user_model()
+all_sites = WeakSet()
 
 
-class APIAdminSite(AdminSite):
+class APIAdminSite():
     """
     Encapsulates an instance of the django admin application.
     """
@@ -59,9 +62,26 @@ class APIAdminSite(AdminSite):
     default_pagination_class = AdminResultsListPagination
     default_log_pagination_class = AdminLogPagination
 
-    def __init__(self, include_auth=False, *args, **kwargs):
+    # Text to put at the end of each page's <title>.
+    site_title = gettext_lazy("Django site admin")
 
-        super().__init__(*args, **kwargs)
+    # Text to put in each page's <h1>.
+    site_header = gettext_lazy("Django administration")
+
+    # Text to put at the top of the admin index page.
+    index_title = gettext_lazy("Site administration")
+
+    # URL for the "View site" link at the top of each admin page.
+    site_url = "/"
+
+    enable_nav_sidebar = True
+
+    empty_value_display = "-"
+
+    def __init__(self, include_auth=False, name="api_admin"):
+        self._registry = {}  # model_class class -> admin_class instance
+        self.name = name
+        all_sites.add(self)
 
         # replace default delete selected with a custom delete_selected action
         self._actions = {'delete_selected': actions.delete_selected}
@@ -71,6 +91,13 @@ class APIAdminSite(AdminSite):
         # if include_auth is set to True then include default UserModel and Groups
         if include_auth:
             self.register([UserModel, Group])
+
+    @property
+    def actions(self):
+        """
+        Get all the enabled actions as an iterable of (name, func).
+        """
+        return self._actions.items()
 
     def register(self, model_or_iterable, admin_class=None, **options):
         admin_class = admin_class or self.admin_class
@@ -96,6 +123,26 @@ class APIAdminSite(AdminSite):
 
                 # Instantiate the admin class to save in the registry
                 self._registry[model] = admin_class(model, self)
+
+    def unregister(self, model_or_iterable):
+        """
+        Unregister the given model(s).
+
+        If a model isn't already registered, raise NotRegistered.
+        """
+        if isinstance(model_or_iterable, ModelBase):
+            model_or_iterable = [model_or_iterable]
+        for model in model_or_iterable:
+            if model not in self._registry:
+                raise NotRegistered(
+                    "The model %s is not registered" % model.__name__)
+            del self._registry[model]
+
+    def is_registered(self, model):
+        """
+        Check if a model class is registered with this `AdminSite`.
+        """
+        return model in self._registry
 
     def get_urls(self):
         urlpatterns = [

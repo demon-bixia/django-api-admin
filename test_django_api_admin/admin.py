@@ -5,12 +5,13 @@ not included in the production branch
 from django.contrib import admin
 from django.urls import path
 
-from django_api_admin.sites import APIAdminSite
 from test_django_api_admin import views as custom_api_views
 from test_django_api_admin.models import Author, Publisher, Book, GuestEntry
+from test_django_api_admin.actions import make_old, make_young
+from django_api_admin.sites import APIAdminSite
 from django_api_admin.admins.inline_admin import TabularInlineAPI
 from django_api_admin.admins.model_admin import APIModelAdmin
-from test_django_api_admin.actions import make_old, make_young
+from django_api_admin.decorators import register, display
 
 
 class CustomAPIAdminSite(APIAdminSite):
@@ -34,13 +35,13 @@ class APIBookInline(TabularInlineAPI):
     model = Book
 
 
-@admin.register(Publisher, site=site)
+@register(Publisher, site=site)
 class PublisherAPIAdmin(APIModelAdmin):
     search_fields = ('name',)
 
 
 # register in api_admin_site
-@admin.register(Author, site=site)
+@register(Author, site=site)
 class AuthorAPIAdmin(APIModelAdmin):
     list_display = ('name', 'age', 'user', 'is_old_enough',
                     'title', 'gender',)
@@ -65,7 +66,7 @@ class AuthorAPIAdmin(APIModelAdmin):
     # )
     inlines = [APIBookInline, ]
 
-    @admin.display(description='is this author old enough')
+    @display(description='is this author old enough')
     def is_old_enough(self, obj):
         return obj.age > 10
 

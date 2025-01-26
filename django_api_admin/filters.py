@@ -7,7 +7,6 @@ certain test -- e.g. being a DateField or ForeignKey.
 """
 import datetime
 
-from django.contrib.admin.options import IncorrectLookupParameters
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import models
 from django.utils import timezone
@@ -17,6 +16,7 @@ from django.utils.translation import gettext_lazy as _
 from django_api_admin.utils.get_model_from_relation import get_model_from_relation
 from django_api_admin.utils.prepare_lookup_value import prepare_lookup_value
 from django_api_admin.utils.reverse_field_path import reverse_field_path
+from django_api_admin.exceptions import IncorrectLookupParameters
 
 
 class ListFilter:

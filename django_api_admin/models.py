@@ -56,6 +56,7 @@ class LogEntry(models.Model):
         settings.AUTH_USER_MODEL,
         models.CASCADE,
         verbose_name=_("user"),
+        related_name="django_api_admin_logentry_user"
     )
     content_type = models.ForeignKey(
         ContentType,
@@ -63,6 +64,7 @@ class LogEntry(models.Model):
         verbose_name=_("content type"),
         blank=True,
         null=True,
+        related_name="django_api_admin_logentry_logentries"
     )
     object_id = models.TextField(_("object id"), blank=True, null=True)
     # Translators: 'repr' means representation
@@ -79,7 +81,7 @@ class LogEntry(models.Model):
     class Meta:
         verbose_name = _("log entry")
         verbose_name_plural = _("log entries")
-        db_table = "django_admin_log"
+        db_table = "django_api_admin_log"
         ordering = ["-action_time"]
 
     def __repr__(self):

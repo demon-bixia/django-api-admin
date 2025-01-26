@@ -20,5 +20,12 @@ class NotRelationField(Exception):
 
 class FieldIsAForeignKeyColumnName(Exception):
     """A field is a foreign key attname, i.e. <FK>_id."""
+    pass
 
+
+class AlreadyRegistered(Exception):
+    pass
+
+
+class NotRegistered(Exception):
     pass

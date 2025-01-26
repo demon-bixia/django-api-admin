@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 
 from django.conf import settings
-from django.contrib.admin.utils import prepare_lookup_value
 from django.core.exceptions import FieldDoesNotExist, ImproperlyConfigured, SuspiciousOperation
 from django.core.paginator import InvalidPage
 from django.db.models import Exists, F, Field, ManyToOneRel, OrderBy, OuterRef
@@ -13,6 +12,7 @@ from django_api_admin.filters import FieldListFilter
 from django_api_admin.serializers import ChangeListSearchSerializer
 from django_api_admin.utils.get_fields_from_path import get_fields_from_path
 from django_api_admin.utils.lookup_spawns_duplicates import lookup_spawns_duplicates
+from django_api_admin.utils.prepare_lookup_value import prepare_lookup_value
 
 
 class ChangeList:
@@ -79,7 +79,7 @@ class ChangeList:
 
         self.root_queryset = model_admin.get_queryset(request)
         self.queryset = self.get_queryset(request)
-        self.get_results(request)
+        self.get_results()
 
     def __repr__(self):
         return "<%s: model=%s model_admin=%s>" % (
@@ -226,9 +226,9 @@ class ChangeList:
                 p[k] = v
         return "?%s" % urlencode(sorted(p.items()))
 
-    def get_results(self, request):
+    def get_results(self):
         paginator = self.model_admin.get_paginator(
-            request, self.queryset, self.list_per_page
+            self.queryset, self.list_per_page
         )
         # Get the number of objects, with admin filters applied.
         result_count = paginator.count

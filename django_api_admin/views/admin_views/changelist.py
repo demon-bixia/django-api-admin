@@ -100,7 +100,7 @@ class ChangeListView(APIView):
         """
         rows = []
         # generate changelist attributes (e.g result_list, paginator, result_count)
-        cl.get_results(request)
+        cl.get_results()
         empty_value_display = cl.model_admin.get_empty_value_display()
         for result in cl.result_list:
             model_info = (cl.model_admin.admin_site.name, type(

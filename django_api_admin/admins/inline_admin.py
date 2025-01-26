@@ -1,17 +1,37 @@
-from django.contrib.admin.options import InlineModelAdmin
 from django.core.exceptions import ValidationError
-
 from django_api_admin.admins.base_admin import BaseAPIModelAdmin
+from django.utils.text import format_lazy
 
 
-class InlineAPIModelAdmin(BaseAPIModelAdmin, InlineModelAdmin):
+class InlineAPIModelAdmin(BaseAPIModelAdmin):
     """
     Edit models connected with a relationship in one page
     """
+    model = None
+    fk_name = None
+    extra = 3
+    min_num = None
+    max_num = None
+    verbose_name = None
+    verbose_name_plural = None
+    can_delete = True
+    show_change_link = False
     admin_style = None
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, parent_model, admin_site,):
+        self.admin_site = admin_site
+        self.parent_model = parent_model
+        self.opts = self.model._meta
+        self.has_registered_model = admin_site.is_registered(self.model)
+        super().__init__()
+        if self.verbose_name_plural is None:
+            if self.verbose_name is None:
+                self.verbose_name_plural = self.opts.verbose_name_plural
+            else:
+                self.verbose_name_plural = format_lazy(
+                    "{}s", self.verbose_name)
+        if self.verbose_name is None:
+            self.verbose_name = self.opts.verbose_name
 
     def get_object(self, request, object_id, from_field=None):
         """

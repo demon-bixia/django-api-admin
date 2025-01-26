@@ -1,6 +1,5 @@
 from django.utils.translation import gettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.admin.options import (TO_FIELD_VAR)
 
 from rest_framework import status
 from rest_framework.views import APIView
@@ -20,7 +19,7 @@ class DetailView(APIView):
 
     def get(self, request, object_id):
         # validate the reverse to field reference
-        to_field = request.query_params.get(TO_FIELD_VAR)
+        to_field = request.query_params.get("_to_field")
         if to_field and not self.model_admin.to_field_allowed(to_field):
             return Response({'detail': 'The field %s cannot be referenced.' % to_field},
                             status=status.HTTP_400_BAD_REQUEST)
