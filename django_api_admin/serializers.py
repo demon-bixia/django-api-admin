@@ -72,7 +72,6 @@ class LogEntrySerializer(serializers.ModelSerializer):
     """
     default LogEntry serializer.
     """
-
     class Meta:
         model = LogEntry
         fields = '__all__'

@@ -82,33 +82,33 @@ class AutoCompleteView(APIView):
             field_name = request.GET["field_name"]
         except KeyError:
             raise ParseError(
-                {'detail': 'missing values app_label, model_name, and field_name'})
+                {'detail': _('missing values app_label, model_name, and field_name')})
 
         # Retrieve objects from parameters.
         try:
             source_model = apps.get_model(app_label, model_name)
         except LookupError:
-            raise ParseError({'detail': 'source model not found'})
+            raise ParseError({'detail': _('source model not found')})
         try:
             source_field = source_model._meta.get_field(field_name)
         except FieldDoesNotExist:
             raise ParseError(
-                {f'detail': 'source field not found in source model {source_model._meta.verbose_name}'})
+                {f'detail': _(f'source field not found in source model {source_model._meta.verbose_name}')})
         try:
             remote_model = source_field.remote_field.model
         except AttributeError:
             raise ParseError(
-                {'detail': 'unable to locate the related model using source field {source_field.name}'})
+                {'detail': _(f'unable to locate the related model using source field {source_field.name}')})
         try:
             model_admin = self.admin_site._registry[remote_model]
         except KeyError:
             raise ParseError(
-                {'detail': 'the remote model is not registered in the admin'})
+                {'detail': _('the remote model is not registered in the admin')})
 
         # Validate suitability of objects.
         if not getattr(model_admin, "search_fields"):
-            raise ParseError(f'{type(
-                model_admin).__qualname__} must have search_fields for the autocomplete_view."')
+            raise ParseError(_(f'{type(
+                model_admin).__qualname__} must have search_fields for the autocomplete_view."'))
 
         to_field_name = getattr(
             source_field.remote_field, "field_name", remote_model._meta.pk.attname

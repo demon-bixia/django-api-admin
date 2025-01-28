@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 
 from django_api_admin.utils.quote import unquote
+from django_api_admin.constants.vars import TO_FIELD_VAR
 
 
 class DeleteView(APIView):
@@ -21,9 +22,9 @@ class DeleteView(APIView):
             opts = self.model_admin.model._meta
 
             # validate the reverse to field reference.
-            to_field = request.query_params.get("_to_field")
+            to_field = request.query_params.get(TO_FIELD_VAR)
             if to_field and not self.model_admin.to_field_allowed(to_field):
-                return Response({'detail': 'The field %s cannot be referenced.' % to_field},
+                return Response({'detail': _('The field %s cannot be referenced.' % to_field)},
                                 status=status.HTTP_400_BAD_REQUEST)
             obj = self.model_admin.get_object(
                 request, unquote(object_id), to_field)

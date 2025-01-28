@@ -12,6 +12,7 @@ from django_api_admin.utils.get_form_fields import get_form_fields
 from django_api_admin.utils.get_form_config import get_form_config
 from django_api_admin.utils.validate_bulk_edits import validate_bulk_edits
 from django_api_admin.utils.get_inlines import get_inlines
+from django_api_admin.constants.vars import TO_FIELD_VAR
 
 
 class ChangeView(APIView):
@@ -64,9 +65,9 @@ class ChangeView(APIView):
     def update(self, request, object_id):
         with transaction.atomic(using=router.db_for_write(self.model_admin.model)):
             # validate the reverse to field reference
-            to_field = request.query_params.get("_to_field")
+            to_field = request.query_params.get(TO_FIELD_VAR)
             if to_field and not self.model_admin.to_field_allowed(to_field):
-                return Response({'detail': 'The field %s cannot be referenced.' % to_field},
+                return Response({'detail': _('The field %s cannot be referenced.') % to_field},
                                 status=status.HTTP_400_BAD_REQUEST)
             obj = self.model_admin.get_object(
                 request, unquote(object_id), to_field)

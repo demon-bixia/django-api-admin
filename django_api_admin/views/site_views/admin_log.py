@@ -30,7 +30,7 @@ class AdminLogView(APIView):
                     raise KeyError
                 queryset = queryset.order_by(ordering)
         except:
-            return Response({'detail': 'Wrong ordering field set.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': _('Wrong ordering field set.')}, status=status.HTTP_400_BAD_REQUEST)
 
         # filter the queryset.
         try:
@@ -38,7 +38,7 @@ class AdminLogView(APIView):
             if object_id is not None:
                 queryset = queryset.filter(object_id=object_id)
         except:
-            return Response({'detail': 'Bad filters.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': _('Bad filters.')}, status=status.HTTP_400_BAD_REQUEST)
 
         # paginate queryset.
         paginator = self.pagination_class()

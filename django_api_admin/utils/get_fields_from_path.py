@@ -1,4 +1,5 @@
 from django_api_admin.utils.get_model_from_relation import get_model_from_relation
+from django_api_admin.constants.vars import LOOKUP_SEP
 
 
 def get_fields_from_path(model, path):
@@ -10,7 +11,7 @@ def get_fields_from_path(model, path):
         <django.db.models.fields.CharField object at 0x...>,
     ]
     """
-    pieces = path.split("__")
+    pieces = path.split(LOOKUP_SEP)
     fields = []
     for piece in pieces:
         if fields:

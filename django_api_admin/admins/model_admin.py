@@ -10,18 +10,13 @@ from rest_framework import serializers
 
 from django_api_admin.filters import SimpleListFilter
 from django_api_admin.admins.base_admin import BaseAPIModelAdmin
-from django_api_admin.changelist import ChangeList
-from django_api_admin.models import ADDITION, CHANGE, DELETION, LogEntry
-from django_api_admin.serializers import ActionSerializer
-from django_api_admin.utils.get_content_type_for_model import \
-    get_content_type_for_model
-from django_api_admin.utils.lookup_spawns_duplicates import \
-    lookup_spawns_duplicates
-from django_api_admin.utils.model_format_dict import model_format_dict
-from django_api_admin.views.admin_views.changelist import ChangeListView
 from django_api_admin.views.admin_views.handle_action import HandleActionView
-from django_api_admin.views.admin_views.history import HistoryView
+from django_api_admin.utils.get_content_type_for_model import get_content_type_for_model
+from django_api_admin.utils.lookup_spawns_duplicates import lookup_spawns_duplicates
+from django_api_admin.utils.model_format_dict import model_format_dict
 from django_api_admin.utils.url_params_from_lookup_dict import url_params_from_lookup_dict
+from django_api_admin.checks import APIModelAdminChecks
+from django_api_admin.constants.vars import LOOKUP_SEP
 
 
 class APIModelAdmin(BaseAPIModelAdmin):
@@ -44,13 +39,14 @@ class APIModelAdmin(BaseAPIModelAdmin):
     save_as_continue = True
     save_on_top = False
     paginator = Paginator
-    action_serializer = ActionSerializer
+    action_serializer = None
     preserve_filters = True
     inlines = ()
     actions = ()
     actions_on_top = True
     actions_on_bottom = False
     actions_selection_counter = True
+    checks_class = APIModelAdminChecks
 
     # these are the admin options used to customize the change list page interface
     # server-side customizations like list_select_related and actions are not included
@@ -87,6 +83,7 @@ class APIModelAdmin(BaseAPIModelAdmin):
         }
 
     def get_action_serializer(self, request):
+        from django_api_admin.serializers import ActionSerializer
         return type('%sActionSerializer' % self.__class__.__name__, (ActionSerializer,), {
             'action': serializers.ChoiceField(choices=[*self.get_action_choices(request)]),
             'selected_ids': serializers.MultipleChoiceField(choices=[*self.get_selected_ids()])
@@ -119,27 +116,13 @@ class APIModelAdmin(BaseAPIModelAdmin):
 
         return inline_instances
 
-    def get_list_display_links(self, list_display):
-        """
-        Return a sequence containing the fields to be displayed as links
-        on the changelist. The list_display parameter is the list of fields
-        returned by get_list_display().
-        """
-        if (
-            self.list_display_links
-            or self.list_display_links is None
-            or not list_display
-        ):
-            return self.list_display_links
-        else:
-            # Use only the first item in list_display as link
-            return list(list_display)[:1]
-
     def get_changelist_instance(self, request):
         """
         Return a `ChangeList` instance based on `request`. May raise
         `IncorrectLookupParameters`.
         """
+        from django_api_admin.changelist import ChangeList
+
         list_display = self.list_display
         list_display_links = self.get_list_display_links(list_display)
         # Add the action checkboxes if any actions are available.
@@ -249,6 +232,29 @@ class APIModelAdmin(BaseAPIModelAdmin):
         description = getattr(func, "short_description",
                               capfirst(action.replace("_", " ")))
         return func, action, description
+
+    def get_list_display(self):
+        """
+        Return a sequence containing the fields to be displayed on the
+        changelist.
+        """
+        return self.list_display
+
+    def get_list_display_links(self, list_display):
+        """
+        Return a sequence containing the fields to be displayed as links
+        on the changelist. The list_display parameter is the list of fields
+        returned by get_list_display().
+        """
+        if (
+            self.list_display_links
+            or self.list_display_links is None
+            or not list_display
+        ):
+            return self.list_display_links
+        else:
+            # Use only the first item in list_display as link
+            return list(list_display)[:1]
 
     def _filter_actions_by_permissions(self, request, actions):
         """Filter out any actions that the user doesn't have access to."""
@@ -384,7 +390,7 @@ class APIModelAdmin(BaseAPIModelAdmin):
 
         relation_parts = []
         prev_field = None
-        for part in lookup.split("__"):
+        for part in lookup.split(LOOKUP_SEP):
             try:
                 field = model._meta.get_field(part)
             except FieldDoesNotExist:
@@ -422,13 +428,16 @@ class APIModelAdmin(BaseAPIModelAdmin):
 
         # Is it a valid relational lookup?
         return not {
-            "__".join(relation_parts),
-            "__".join(relation_parts + [part]),
+            LOOKUP_SEP.join(relation_parts),
+            LOOKUP_SEP.join(relation_parts + [part]),
         }.isdisjoint(valid_lookups)
 
     def get_changelist_view(self):
+        from django_api_admin.views.admin_views.changelist import ChangeListView
+
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes,
+            'authentication_classes': self.admin_site.authentication_classes,
             'model_admin': self
         }
         return ChangeListView.as_view(**defaults)
@@ -436,14 +445,18 @@ class APIModelAdmin(BaseAPIModelAdmin):
     def get_handle_action_view(self):
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes,
+            'authentication_classes': self.admin_site.authentication_classes,
             'model_admin': self
         }
         return HandleActionView.as_view(**defaults)
 
     def get_history_view(self):
+        from django_api_admin.views.admin_views.history import HistoryView
+
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes,
             'serializer_class': self.admin_site.log_entry_serializer,
+            'authentication_classes': self.admin_site.authentication_classes,
             'model_admin': self
         }
         return HistoryView.as_view(**defaults)
@@ -463,7 +476,7 @@ class APIModelAdmin(BaseAPIModelAdmin):
                 return "%s__search" % field_name[1:]
             # Use field_name if it includes a lookup.
             opts = queryset.model._meta
-            lookup_fields = field_name.split("__")
+            lookup_fields = field_name.split(LOOKUP_SEP)
             # Go through the fields, following all relations.
             prev_field = None
             for path_part in lookup_fields:
@@ -528,9 +541,10 @@ class APIModelAdmin(BaseAPIModelAdmin):
     def log_addition(self, request, obj, message):
         """
         Log that an object has been successfully added.
-
         The default implementation creates an admin LogEntry object.
         """
+        from django_api_admin.models import ADDITION, LogEntry
+
         return LogEntry.objects.log_action(
             user_id=request.user.pk,
             content_type_id=get_content_type_for_model(obj).pk,
@@ -546,6 +560,8 @@ class APIModelAdmin(BaseAPIModelAdmin):
 
         The default implementation creates an admin LogEntry object.
         """
+        from django_api_admin.models import CHANGE, LogEntry
+
         return LogEntry.objects.log_action(
             user_id=request.user.pk,
             content_type_id=get_content_type_for_model(obj).pk,
@@ -562,6 +578,8 @@ class APIModelAdmin(BaseAPIModelAdmin):
 
         The default implementation creates an admin LogEntry object.
         """
+        from django_api_admin.models import DELETION, LogEntry
+
         return LogEntry.objects.log_action(
             user_id=request.user.pk,
             content_type_id=get_content_type_for_model(obj).pk,

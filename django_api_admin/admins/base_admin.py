@@ -3,13 +3,9 @@ import copy
 from django.contrib.auth import get_permission_codename
 from django.utils.translation import gettext as _
 
-from django_api_admin.views.admin_views.add import AddView
-from django_api_admin.views.admin_views.change import ChangeView
-from django_api_admin.views.admin_views.delete import DeleteView
-from django_api_admin.views.admin_views.detail import DetailView
-from django_api_admin.views.admin_views.list import ListView
-
 from rest_framework.serializers import ModelSerializer
+
+from django_api_admin.checks import APIBaseModelAdminChecks
 
 
 class BaseAPIModelAdmin:
@@ -41,7 +37,10 @@ class BaseAPIModelAdmin:
     sortable_by = None
     view_on_site = True
     show_full_result_count = True
-    # checks_class = BaseModelAdminChecks
+    checks_class = APIBaseModelAdminChecks
+
+    def check(self, **kwargs):
+        return self.checks_class().check(self, **kwargs)
 
     def get_serializer_class(self):
         """
@@ -220,40 +219,55 @@ class BaseAPIModelAdmin:
         return isinstance(self, InlineAPIModelAdmin)
 
     def get_list_view(self):
+        from django_api_admin.views.admin_views.list import ListView
+
         defaults = {
             'serializer_class': self.get_serializer_class(),
             'permission_classes': self.admin_site.default_permission_classes,
+            'authentication_classes': self.admin_site.authentication_classes,
             'model_admin': self,
         }
         return ListView.as_view(**defaults)
 
     def get_detail_view(self):
+        from django_api_admin.views.admin_views.detail import DetailView
+
         defaults = {
             'serializer_class': self.get_serializer_class(),
             'permission_classes': self.admin_site.default_permission_classes,
+            'authentication_classes': self.admin_site.authentication_classes,
             'model_admin': self
         }
         return DetailView.as_view(**defaults)
 
     def get_add_view(self):
+        from django_api_admin.views.admin_views.add import AddView
+
         defaults = {
             'serializer_class': self.get_serializer_class(),
             'permission_classes': self.admin_site.default_permission_classes,
+            'authentication_classes': self.admin_site.authentication_classes,
             'model_admin': self,
         }
         return AddView.as_view(**defaults)
 
     def get_change_view(self):
+        from django_api_admin.views.admin_views.change import ChangeView
+
         defaults = {
             'serializer_class': self.get_serializer_class(),
             'permission_classes': self.admin_site.default_permission_classes,
+            'authentication_classes': self.admin_site.authentication_classes,
             'model_admin': self,
         }
         return ChangeView.as_view(**defaults)
 
     def get_delete_view(self):
+        from django_api_admin.views.admin_views.delete import DeleteView
+
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes,
+            'authentication_classes': self.admin_site.authentication_classes,
             'model_admin': self
         }
         return DeleteView.as_view(**defaults)

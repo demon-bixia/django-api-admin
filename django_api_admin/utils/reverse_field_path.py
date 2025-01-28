@@ -1,5 +1,6 @@
 from django_api_admin.utils import get_model_from_relation
 from django_api_admin.exceptions import NotRelationField
+from django_api_admin.constants.vars import LOOKUP_SEP
 
 
 def reverse_field_path(model, path):
@@ -12,7 +13,7 @@ def reverse_field_path(model, path):
     """
     reversed_path = []
     parent = model
-    pieces = path.split("__")
+    pieces = path.split(LOOKUP_SEP)
     for piece in pieces:
         field = parent._meta.get_field(piece)
         # skip trailing data field if extant:
@@ -30,4 +31,4 @@ def reverse_field_path(model, path):
             related_name = field.field.name
             parent = field.related_model
         reversed_path.insert(0, related_name)
-    return (parent, "__".join(reversed_path))
+    return (parent, LOOKUP_SEP.join(reversed_path))

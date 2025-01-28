@@ -13,6 +13,7 @@ from test_django_api_admin.models import Author, Publisher
 from test_django_api_admin.admin import site
 
 from django_api_admin.utils.force_login import force_login
+from django_api_admin.constants.vars import TO_FIELD_VAR
 
 
 UserModel = get_user_model()
@@ -125,7 +126,7 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
         author = Author.objects.create(
             name="test2", age=20, is_vip=True, user_id=self.user.pk)
         url = reverse('api_admin:%s_%s_delete' % self.author_info, kwargs={
-                      'object_id': author.pk}) + '?_to_field=name'
+                      'object_id': author.pk}) + f'?{TO_FIELD_VAR}=name'
         response = self.client.post(url)
         self.assertEqual(response.status_code, 400)
         self.assertTrue(Author.objects.filter(pk=author.pk).exists())

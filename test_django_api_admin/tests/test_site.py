@@ -142,10 +142,10 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
             url = reverse('api_admin:view_on_site', kwargs={
                           'content_type_id': content_type_id, 'object_id': object_id})
             response = self.client.get(url)
-            self.assertEqual(response.status_code, 302)
-            self.assertEqual(response.get('location'),
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.data['url'],
                              'http://testserver/author/1/')
-            url = response.get('location')
+            url = response.data['url']
             # test the detail view
             response = self.client.get(url)
             self.assertEqual(response.status_code, 200)

@@ -1,6 +1,8 @@
 from django.core.exceptions import ValidationError
-from django_api_admin.admins.base_admin import BaseAPIModelAdmin
 from django.utils.text import format_lazy
+
+from django_api_admin.admins.base_admin import BaseAPIModelAdmin
+from django_api_admin.checks import InlineAPIModelAdminChecks
 
 
 class InlineAPIModelAdmin(BaseAPIModelAdmin):
@@ -17,6 +19,7 @@ class InlineAPIModelAdmin(BaseAPIModelAdmin):
     can_delete = True
     show_change_link = False
     admin_style = None
+    checks_class = InlineAPIModelAdminChecks
 
     def __init__(self, parent_model, admin_site,):
         self.admin_site = admin_site

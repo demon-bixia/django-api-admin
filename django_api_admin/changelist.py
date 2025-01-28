@@ -13,6 +13,7 @@ from django_api_admin.serializers import ChangeListSearchSerializer
 from django_api_admin.utils.get_fields_from_path import get_fields_from_path
 from django_api_admin.utils.lookup_spawns_duplicates import lookup_spawns_duplicates
 from django_api_admin.utils.prepare_lookup_value import prepare_lookup_value
+from django_api_admin.constants.vars import TO_FIELD_VAR, IS_POPUP_VAR, ALL_VAR, ORDER_VAR, SEARCH_VAR, PAGE_VAR, ERROR_FLAG
 
 
 class ChangeList:
@@ -63,19 +64,19 @@ class ChangeList:
                 for error in search_serializer.errors.values()
             ]
             raise IncorrectLookupParameters(errors)
-        self.query = search_serializer.validated_data.get("q") or ""
+        self.query = search_serializer.validated_data.get(SEARCH_VAR) or ""
 
         try:
-            self.page_num = int(request.GET.get("p", 1))
+            self.page_num = int(request.GET.get(PAGE_VAR, 1))
         except ValueError:
             self.page_num = 1
 
         self.show_all = "all" in request.GET
         self.params = dict(request.GET.items())
-        if "p" in self.params:
-            del self.params["p"]
-        if "e" in self.params:
-            del self.params["e"]
+        if PAGE_VAR in self.params:
+            del self.params[PAGE_VAR]
+        if ERROR_FLAG in self.params:
+            del self.params[ERROR_FLAG]
 
         self.root_queryset = model_admin.get_queryset(request)
         self.queryset = self.get_queryset(request)
@@ -96,7 +97,7 @@ class ChangeList:
         lookup_params = params.copy()  # a dictionary of the query string
         # Remove all the parameters that are globally and systematically
         # ignored.
-        for ignored in ("all", "o",  "q", "_popup", "_to_field"):
+        for ignored in (ALL_VAR, ORDER_VAR, SEARCH_VAR, IS_POPUP_VAR, TO_FIELD_VAR):
             if ignored in lookup_params:
                 del lookup_params[ignored]
         return lookup_params

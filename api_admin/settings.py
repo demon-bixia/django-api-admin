@@ -125,11 +125,3 @@ CORS_ALLOW_CREDENTIALS = True
 
 # to allow cross-domain requests from our frontend
 CSRF_TRUSTED_ORIGINS = ['http://localhost:3000']
-
-
-# rest framework settings
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
-}
