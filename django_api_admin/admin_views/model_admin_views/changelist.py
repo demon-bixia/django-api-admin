@@ -12,6 +12,7 @@ from django_api_admin.utils.get_form_fields import get_form_fields
 from django_api_admin.utils.label_for_field import label_for_field
 from django_api_admin.utils.lookup_field import lookup_field
 from django_api_admin.exceptions import IncorrectLookupParameters
+from rest_framework.views import APIView
 
 
 class ChangeListView(APIView):

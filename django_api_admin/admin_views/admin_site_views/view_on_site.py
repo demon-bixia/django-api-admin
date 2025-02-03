@@ -7,6 +7,7 @@ from django.utils.translation import gettext as _
 from rest_framework import status
 from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
+
 from rest_framework.views import APIView
 
 
@@ -15,6 +16,7 @@ class ViewOnSiteView(APIView):
     return the object's page url based on a content-type ID and an object ID.
     """
     permission_classes = []
+    admin_site = None
 
     def get(self, request, content_type_id, object_id):
         # Look up the object, making sure it's got a get_absolute_url() function.

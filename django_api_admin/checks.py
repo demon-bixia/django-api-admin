@@ -65,7 +65,8 @@ def check_dependencies(**kwargs):
     app_dependencies = (
         ("django.contrib.contenttypes", 401),
         ("django.contrib.auth", 402),
-        ("rest_framework", 403)
+        ("rest_framework", 403),
+        ("drf_spectacular", 404)
     )
     for app_name, error_code in app_dependencies:
         if not apps.is_installed(app_name):
@@ -83,7 +84,7 @@ def check_dependencies(**kwargs):
             checks.Error(
                 "'django.contrib.auth.middleware.AuthenticationMiddleware' must "
                 "be in MIDDLEWARE in order to use the admin application.",
-                id="admin.E404",
+                id="admin.E405",
             )
         )
     return errors

@@ -2,7 +2,6 @@ from django.db import router, transaction
 from django.utils.translation import gettext_lazy as _
 
 from rest_framework import status
-from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 
@@ -10,6 +9,8 @@ from django_api_admin.utils.get_form_fields import get_form_fields
 from django_api_admin.utils.get_form_config import get_form_config
 from django_api_admin.utils.validate_bulk_edits import validate_bulk_edits
 from django_api_admin.utils.get_inlines import get_inlines
+
+from rest_framework.views import APIView
 
 
 class AddView(APIView):

@@ -219,7 +219,7 @@ class BaseAPIModelAdmin:
         return isinstance(self, InlineAPIModelAdmin)
 
     def get_list_view(self):
-        from django_api_admin.views.admin_views.list import ListView
+        from django_api_admin.admin_views.model_admin_views.list import ListView
 
         defaults = {
             'serializer_class': self.get_serializer_class(),
@@ -230,7 +230,7 @@ class BaseAPIModelAdmin:
         return ListView.as_view(**defaults)
 
     def get_detail_view(self):
-        from django_api_admin.views.admin_views.detail import DetailView
+        from django_api_admin.admin_views.model_admin_views.detail import DetailView
 
         defaults = {
             'serializer_class': self.get_serializer_class(),
@@ -241,7 +241,7 @@ class BaseAPIModelAdmin:
         return DetailView.as_view(**defaults)
 
     def get_add_view(self):
-        from django_api_admin.views.admin_views.add import AddView
+        from django_api_admin.admin_views.model_admin_views.add import AddView
 
         defaults = {
             'serializer_class': self.get_serializer_class(),
@@ -252,7 +252,7 @@ class BaseAPIModelAdmin:
         return AddView.as_view(**defaults)
 
     def get_change_view(self):
-        from django_api_admin.views.admin_views.change import ChangeView
+        from django_api_admin.admin_views.model_admin_views.change import ChangeView
 
         defaults = {
             'serializer_class': self.get_serializer_class(),
@@ -263,7 +263,7 @@ class BaseAPIModelAdmin:
         return ChangeView.as_view(**defaults)
 
     def get_delete_view(self):
-        from django_api_admin.views.admin_views.delete import DeleteView
+        from django_api_admin.admin_views.model_admin_views.delete import DeleteView
 
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes,

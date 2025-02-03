@@ -170,14 +170,11 @@ class APIAdminSite():
         return model in self._registry
 
     def get_urls(self):
-        from django.contrib.contenttypes import views as contenttype_views
-        from rest_framework_simplejwt.views import TokenRefreshView
-
         urlpatterns = [
             path('index/', self.get_index_view(), name='index'),
             path('user_info/', self.get_user_info_view(), name='user_info'),
             path('token/', self.get_token_view(), name='token_obtain_pair'),
-            path('token/refresh/', TokenRefreshView.as_view(),
+            path('token/refresh/', self.get_token_refresh_view(),
                  name='token_refresh'),
             path('password_change/', self.get_password_change_view(),
                  name='password_change'),
@@ -189,6 +186,9 @@ class APIAdminSite():
                  name='site_context'),
             path('admin_log/', self.get_admin_log_view(),
                  name='admin_log'),
+            path('schema/', self.get_schema_view(), name='schema'),
+            path('schema/swagger-ui/',
+                 self.get_docs_view(), name='swagger-ui'),
         ]
 
         # add the app detail view
@@ -209,13 +209,13 @@ class APIAdminSite():
         if self.include_view_on_site_view:
             urlpatterns.append(path(
                 'r/<int:content_type_id>/<path:object_id>/',
-                self.get_view_on_site(),
+                self.get_view_on_site_view(),
                 name='view_on_site',
             ))
 
         # add api_root for browsable api.
         if self.include_root_view:
-            from django_api_admin.views.site_views.admin_api_root import AdminAPIRootView
+            from django_api_admin.admin_views.admin_site_views.admin_api_root import AdminAPIRootView
 
             # remove detail, redirect urls and urls with no names
             excluded_url_names = ['app_list',
@@ -357,7 +357,7 @@ class APIAdminSite():
         })
 
     def get_index_view(self):
-        from django_api_admin.views.site_views.index import IndexView
+        from django_api_admin.admin_views.admin_site_views.index import IndexView
 
         defaults = {
             'permission_classes': self.default_permission_classes,
@@ -367,7 +367,7 @@ class APIAdminSite():
         return IndexView.as_view(**defaults)
 
     def get_app_index_view(self):
-        from django_api_admin.views.site_views.app_index import AppIndexView
+        from django_api_admin.admin_views.admin_site_views.app_index import AppIndexView
 
         defaults = {
             'permission_classes': self.default_permission_classes,
@@ -377,7 +377,7 @@ class APIAdminSite():
         return AppIndexView.as_view(**defaults)
 
     def get_token_view(self):
-        from django_api_admin.views.site_views.obtain_token import ObtainTokenView
+        from django_api_admin.admin_views.admin_site_views.obtain_token import ObtainTokenView
 
         defaults = {
             'permission_classes': [],
@@ -387,27 +387,39 @@ class APIAdminSite():
         }
         return ObtainTokenView.as_view(**defaults)
 
+    def get_token_refresh_view(self):
+        from django_api_admin.admin_views.admin_site_views.token_refresh import RefreshView
+
+        defaults = {
+            'permission_classes': self.default_permission_classes,
+            'authentication_classes': self.authentication_classes,
+            'admin_site': self
+        }
+        return RefreshView.as_view(**defaults)
+
     def get_password_change_view(self):
-        from django_api_admin.views.site_views.password_change import PasswordChangeView
+        from django_api_admin.admin_views.admin_site_views.password_change import PasswordChangeView
 
         defaults = {
             'permission_classes': self.default_permission_classes,
             'serializer_class': self.password_change_serializer,
             'authentication_classes': self.authentication_classes,
+            'admin_site': self,
         }
         return PasswordChangeView.as_view(**defaults)
 
     def get_i18n_javascript_view(self):
-        from django_api_admin.views.site_views.language_catalog import LanguageCatalogView
+        from django_api_admin.admin_views.admin_site_views.language_catalog import LanguageCatalogView
 
         defaults = {
             'permission_classes': self.default_permission_classes,
             'authentication_classes': self.authentication_classes,
+            'admin_site': self,
         }
         return LanguageCatalogView.as_view(**defaults)
 
     def autocomplete_view(self):
-        from django_api_admin.views.site_views.autocomplete import AutoCompleteView
+        from django_api_admin.admin_views.admin_site_views.autocomplete import AutoCompleteView
 
         defaults = {
             'permission_classes': self.default_permission_classes,
@@ -417,7 +429,7 @@ class APIAdminSite():
         return AutoCompleteView.as_view(**defaults)
 
     def get_site_context_view(self):
-        from django_api_admin.views.site_views.site_context import SiteContextView
+        from django_api_admin.admin_views.admin_site_views.site_context import SiteContextView
 
         defaults = {
             'permission_classes': self.default_permission_classes,
@@ -427,7 +439,7 @@ class APIAdminSite():
         return SiteContextView.as_view(**defaults)
 
     def get_admin_log_view(self):
-        from django_api_admin.views.site_views.admin_log import AdminLogView
+        from django_api_admin.admin_views.admin_site_views.admin_log import AdminLogView
 
         defaults = {
             'permission_classes': self.default_permission_classes,
@@ -439,30 +451,42 @@ class APIAdminSite():
         return AdminLogView.as_view(**defaults)
 
     def get_user_info_view(self):
-        from django_api_admin.views.site_views.user_information import UserInformation
+        from django_api_admin.admin_views.admin_site_views.user_information import UserInformation
 
         defaults = {
             'permission_classes': self.default_permission_classes,
             'serializer_class': self.user_serializer,
-            'authentication_classes': self.authentication_classes
+            'authentication_classes': self.authentication_classes,
+            'admin_site': self,
         }
         return UserInformation.as_view(**defaults)
 
-    def get_view_on_site(self):
-        from django_api_admin.views.site_views.view_on_site import ViewOnSiteView
+    def get_view_on_site_view(self):
+        from django_api_admin.admin_views.admin_site_views.view_on_site import ViewOnSiteView
 
         defaults = {
             'permission_classes': self.default_permission_classes,
-            'authentication_classes': self.authentication_classes
+            'authentication_classes': self.authentication_classes,
+            'admin_site': self,
         }
         return ViewOnSiteView.as_view(**defaults)
+
+    def get_schema_view(self):
+        from drf_spectacular.views import SpectacularAPIView
+
+        return SpectacularAPIView.as_view()
+
+    def get_docs_view(self):
+        from drf_spectacular.views import SpectacularSwaggerView
+
+        return SpectacularSwaggerView.as_view(url_name=f'{self.name}:schema')
 
 
 class DefaultAdminSite(LazyObject):
     def _setup(self):
         AdminSiteClass = import_string(
             apps.get_app_config("django_api_admin").default_site)
-        self._wrapped = AdminSiteClass()
+        self._wrapped = AdminSiteClass(name='default_api_admin')
 
     def __repr__(self):
         return repr(self._wrapped)

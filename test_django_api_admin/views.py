@@ -2,14 +2,18 @@
 views used to test the form fields in the client and 
 is not included in production.
 """
-from django_api_admin.utils.get_form_fields import get_form_fields
-from test_django_api_admin.models import Author
-from rest_framework import serializers, status
-from django.conf import settings
 import json
 import datetime
+from decimal import Decimal
+
+from django.conf import settings
+
+from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from django_api_admin.utils.get_form_fields import get_form_fields
+from test_django_api_admin.models import Author
 
 
 class HelloWorldView(APIView):
@@ -90,19 +94,19 @@ class TestView(APIView):
 
         'integer_field_test': [
             {
-                'int': serializers.IntegerField(max_value=10, min_value=0, allow_null=True)
+                'int': serializers.IntegerField(max_value=Decimal(10), min_value=Decimal(0), allow_null=True)
             }
         ],
 
         'float_field_test': [
             {
-                'float': serializers.FloatField(max_value=10, min_value=1)
+                'float': serializers.FloatField(max_value=Decimal(10), min_value=Decimal(1))
             }
         ],
 
         'decimal_field_test': [
             {
-                'decimal': serializers.DecimalField(max_digits=5, decimal_places=2, max_value=1000, min_value=1)
+                'decimal': serializers.DecimalField(max_digits=5, decimal_places=2, max_value=Decimal(1000), min_value=Decimal(1))
             }
         ],
 

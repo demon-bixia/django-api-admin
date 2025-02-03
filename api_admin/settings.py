@@ -1,4 +1,6 @@
+from datetime import timedelta
 from pathlib import Path
+from django.utils.translation import gettext_lazy as _
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -30,6 +32,7 @@ INSTALLED_APPS = [
     # 3rd party apps
     'corsheaders',
     'rest_framework',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -125,3 +128,26 @@ CORS_ALLOW_CREDENTIALS = True
 
 # to allow cross-domain requests from our frontend
 CSRF_TRUSTED_ORIGINS = ['http://localhost:3000']
+
+
+REST_FRAMEWORK = {
+    # YOUR SETTINGS
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    "POSTPROCESSING_HOOKS": [
+        'drf_spectacular.hooks.postprocess_schema_enums',
+        'django_api_admin.hooks.modify_schema'
+    ]
+}
+
+SIMPLE_JWT = {
+    # Set access token lifetime to 1 day
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    # Set refresh token lifetime to 7 days
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': False,
+    'UPDATE_LAST_LOGIN': False,
+}

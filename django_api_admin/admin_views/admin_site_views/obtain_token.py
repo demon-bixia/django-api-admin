@@ -2,11 +2,11 @@ from django.utils.translation import gettext_lazy as _
 
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from django_api_admin.utils.get_form_fields import get_form_fields
+from rest_framework.views import APIView
 
 
 class ObtainTokenView(APIView):

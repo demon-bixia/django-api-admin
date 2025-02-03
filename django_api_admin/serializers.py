@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate, get_user_model
 from django.utils.translation import gettext_lazy as _
+
 from rest_framework import serializers
 
 from django_api_admin.models import LogEntry
@@ -77,16 +78,42 @@ class LogEntrySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class AdminLogRequestSerializer(serializers.Serializer):
+    """
+    Serializer for the admin log request.
+    """
+    o = serializers.ChoiceField(
+        choices=[
+            ('action_time', 'Action Time (Ascending)'),
+            ('-action_time', 'Action Time (Descending)')
+        ],
+        required=False
+    )
+    object_id = serializers.IntegerField(required=False)
+
+
 class PasswordChangeSerializer(serializers.Serializer):
     """
     Allow changing password by entering the old_password and a new one.
     """
-    old_password = serializers.CharField(label=_('Old password'), write_only=True, required=True,
-                                         style={'input_type': 'password'})
-    new_password1 = serializers.CharField(label=_('New Password'), write_only=True, required=True,
-                                          style={'input_type': 'password'})
-    new_password2 = serializers.CharField(label=_('New password confirmation'), write_only=True, required=True,
-                                          style={'input_type': 'password'})
+    old_password = serializers.CharField(
+        label=_('Old password'),
+        write_only=True,
+        required=True,
+        style={'input_type': 'password'}
+    )
+    new_password1 = serializers.CharField(
+        label=_('New Password'),
+        write_only=True,
+        required=True,
+        style={'input_type': 'password'}
+    )
+    new_password2 = serializers.CharField(
+        label=_('New password confirmation'),
+        write_only=True,
+        required=True,
+        style={'input_type': 'password'}
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -140,3 +167,83 @@ class ChangeListSearchSerializer(serializers.Serializer):
     validates the changelist querystring
     """
     q = serializers.CharField(required=False, trim_whitespace=False)
+
+
+class AppIndexSerializer(serializers.Serializer):
+    app_label = serializers.CharField()
+
+    def validate(self, attrs):
+        if attrs['app_label'] not in self.context['registered_app_labels']:
+            raise serializers.ValidationError(
+                _("finish must occur after start"))
+        return super().validate(attrs)
+
+
+class PermissionsSerializer(serializers.Serializer):
+    add = serializers.BooleanField()
+    change = serializers.BooleanField()
+    delete = serializers.BooleanField()
+    view = serializers.BooleanField()
+
+
+class ModelSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    object_name = serializers.CharField()
+    perms = PermissionsSerializer()
+    list_url = serializers.CharField()
+    changelist_url = serializers.CharField()
+    add_url = serializers.CharField()
+    perform_action_url = serializers.CharField()
+    view_only = serializers.BooleanField()
+
+
+class AppSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    app_label = serializers.CharField()
+    app_url = serializers.CharField()
+    has_module_perms = serializers.BooleanField()
+    models = ModelSerializer(many=True)
+
+
+class AppListSerializer(serializers.Serializer):
+    app_list = AppSerializer(many=True)
+
+
+class AutoCompleteSerializer(serializers.Serializer):
+    app_label = serializers.CharField(required=True)
+    model_name = serializers.CharField(required=True)
+    field_name = serializers.CharField(required=True)
+    term = serializers.CharField(required=False, default="")
+
+
+class FormatsSerializer(serializers.Serializer):
+    DATE_FORMAT = serializers.CharField(allow_blank=False)
+    DATETIME_FORMAT = serializers.CharField(allow_blank=False)
+    TIME_FORMAT = serializers.CharField(allow_blank=False)
+    YEAR_MONTH_FORMAT = serializers.CharField(allow_blank=False)
+    MONTH_DAY_FORMAT = serializers.CharField(allow_blank=False)
+    SHORT_DATE_FORMAT = serializers.CharField(allow_blank=False)
+    SHORT_DATETIME_FORMAT = serializers.CharField(allow_blank=False)
+    FIRST_DAY_OF_WEEK = serializers.IntegerField()
+    DECIMAL_SEPARATOR = serializers.CharField(allow_blank=False)
+    THOUSAND_SEPARATOR = serializers.CharField(allow_blank=False)
+    NUMBER_GROUPING = serializers.IntegerField()
+    DATE_INPUT_FORMATS = serializers.ListField(
+        child=serializers.CharField(allow_blank=False)
+    )
+    TIME_INPUT_FORMATS = serializers.ListField(
+        child=serializers.CharField(allow_blank=False)
+    )
+    DATETIME_INPUT_FORMATS = serializers.ListField(
+        child=serializers.CharField(allow_blank=False)
+    )
+
+
+class CatalogSerializer(serializers.Serializer):
+    catalog = serializers.DictField(child=serializers.CharField())
+
+
+class LanguageCatalogSerializer(serializers.Serializer):
+    catalog = CatalogSerializer()
+    formats = FormatsSerializer()
+    plural = serializers.CharField(allow_null=True, required=False)

@@ -10,7 +10,7 @@ from rest_framework import serializers
 
 from django_api_admin.filters import SimpleListFilter
 from django_api_admin.admins.base_admin import BaseAPIModelAdmin
-from django_api_admin.views.admin_views.handle_action import HandleActionView
+from django_api_admin.admin_views.model_admin_views.handle_action import HandleActionView
 from django_api_admin.utils.get_content_type_for_model import get_content_type_for_model
 from django_api_admin.utils.lookup_spawns_duplicates import lookup_spawns_duplicates
 from django_api_admin.utils.model_format_dict import model_format_dict
@@ -433,7 +433,7 @@ class APIModelAdmin(BaseAPIModelAdmin):
         }.isdisjoint(valid_lookups)
 
     def get_changelist_view(self):
-        from django_api_admin.views.admin_views.changelist import ChangeListView
+        from django_api_admin.admin_views.model_admin_views.changelist import ChangeListView
 
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes,
@@ -451,7 +451,7 @@ class APIModelAdmin(BaseAPIModelAdmin):
         return HandleActionView.as_view(**defaults)
 
     def get_history_view(self):
-        from django_api_admin.views.admin_views.history import HistoryView
+        from django_api_admin.admin_views.model_admin_views.history import HistoryView
 
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes,

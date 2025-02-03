@@ -6,7 +6,11 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from drf_spectacular.utils import extend_schema, OpenApiResponse
+
 from django_api_admin.models import LogEntry
+from django_api_admin.openapi import CommonAPIResponses
+from django_api_admin.serializers import LogEntrySerializer, AdminLogRequestSerializer
 
 
 class AdminLogView(APIView):
@@ -19,6 +23,20 @@ class AdminLogView(APIView):
     ordering_fields = ['action_time', '-action_time']
     admin_site = None
 
+    @extend_schema(
+        methods=['GET'],
+        parameters=[AdminLogRequestSerializer],
+        responses={
+            200: OpenApiResponse(
+                response=LogEntrySerializer(many=True),
+                description='Successfully retrieved admin log entries'
+            ),
+            401: CommonAPIResponses.unauthorized(),
+            403: CommonAPIResponses.permission_denied(),
+        },
+        description='Retrieve a list of admin log entries',
+        tags=['admin-log']
+    )
     def get(self, request):
         queryset = LogEntry.objects.all()
 

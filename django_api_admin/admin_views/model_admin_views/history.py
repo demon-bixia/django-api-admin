@@ -8,6 +8,7 @@ from rest_framework.exceptions import PermissionDenied
 from django_api_admin.models import LogEntry
 from django_api_admin.utils.quote import unquote
 from django_api_admin.utils.get_content_type_for_model import get_content_type_for_model
+from rest_framework.views import APIView
 
 
 class HistoryView(APIView):

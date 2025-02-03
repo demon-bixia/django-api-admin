@@ -6,28 +6,57 @@ from rest_framework.exceptions import PermissionDenied, ParseError
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.views import APIView
+
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiResponse
+
+from django_api_admin.serializers import AutoCompleteSerializer
+from django_api_admin.openapi import CommonAPIResponses
 
 
 class AutoCompleteView(APIView):
     """
-    Return a JsonResponse with search results as defined in
-    serialize_result(), by default:
-    {
-        results: [{id: "123" text: "foo"}],
-        pagination: {more: true}
-    }
+    API view for handling autocomplete functionality in admin fields.
     """
     permission_classes = []
     admin_site = None
 
+    @extend_schema(
+        parameters=[AutoCompleteSerializer],
+        responses={
+            200: OpenApiResponse(
+                description="Successful autocomplete response",
+                response=AutoCompleteSerializer,
+                examples=[
+                    OpenApiExample(
+                        name="Success Response",
+                        summary="Example of a successful autocomplete response",
+                        description="Returns matching records based on the search term",
+                        value=[{
+                            "id": 1,
+                            "name": "Muhammad",
+                            "age": 60,
+                            "is_vip": True,
+                            "date_joined": "2025-02-02T23:09:31.994853Z",
+                            "title": None,
+                            "user": 1,
+                            "publisher": [1],
+                            "pk": 1
+                        }],
+                        status_codes=["200"],
+                    )
+                ]
+            ),
+            403: CommonAPIResponses.permission_denied(),
+            401: CommonAPIResponses.unauthorized(),
+        },
+        description="Endpoint for autocomplete functionality on model fields"
+    )
     def get(self, request):
         """
-        Return a JsonResponse with search results as defined in
-        serialize_result(), by default:
-        {
-            results: [{id: "123" text: "foo"}],
-            pagination: {more: true}
-        }
+        Process the request to extract search parameters,
+        validates user permissions, retrieves the relevant queryset,
+        paginates the results, and returns them as a JSON response.
         """
         (
             self.term,
