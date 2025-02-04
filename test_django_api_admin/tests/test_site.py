@@ -134,7 +134,6 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
         if site.include_view_on_site_view:
             # create an author
             Author.objects.create(name='muhammad', age=2, user=self.user)
-
             # test if view_on_site view works
             content_type_id = ContentType.objects.get(
                 app_label=Author._meta.app_label, model=Author._meta.verbose_name).id

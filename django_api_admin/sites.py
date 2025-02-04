@@ -68,10 +68,20 @@ class APIAdminSite():
 
     empty_value_display = "-"
 
+    # separate model_admin urls from site urls
+    site_urls = []
+    admin_urls = {}
+
+    # used for dynamically tagging views when generating schemas
+    swagger_url_name = "swagger-ui"
+    url_prefix = None
+
     def __init__(self, include_auth=True, name="api_admin"):
         from django.contrib.auth.models import Group
         from rest_framework_simplejwt.authentication import JWTAuthentication
         from django_api_admin import serializers as api_serializers
+
+        self.url_prefix = self.url_prefix or f'/{name}'
 
         # set the default authentication class
         self.authentication_classes = [JWTAuthentication,]
@@ -188,31 +198,25 @@ class APIAdminSite():
                  name='admin_log'),
             path('schema/', self.get_schema_view(), name='schema'),
             path('schema/swagger-ui/',
-                 self.get_docs_view(), name='swagger-ui'),
+                 self.get_docs_view(), name=self.swagger_url_name),
         ]
 
-        # add the app detail view
-        valid_app_labels = [model._meta.app_label for model,
-                            model_admin in self._registry.items()]
+        # add the app index view
+        valid_app_labels = set(model._meta.app_label for model,
+                               model_admin in self._registry.items())
         regex = r'^(?P<app_label>' + '|'.join(valid_app_labels) + ')/$'
         urlpatterns.append(
             re_path(regex, self.get_app_index_view(), name='app_list'))
 
-        # add model_admin urls
-        for model, model_admin in self._registry.items():
-            urlpatterns += [
-                path('%s/%s/' % (model._meta.app_label,
-                                 model._meta.model_name), include(model_admin.urls)),
-            ]
+        self.site_urls = urlpatterns
 
-        # add optional views
+        # add view on site view
         if self.include_view_on_site_view:
             urlpatterns.append(path(
                 'r/<int:content_type_id>/<path:object_id>/',
                 self.get_view_on_site_view(),
                 name='view_on_site',
             ))
-
         # add api_root for browsable api.
         if self.include_root_view:
             from django_api_admin.admin_views.admin_site_views.admin_api_root import AdminAPIRootView
@@ -225,6 +229,14 @@ class APIAdminSite():
             root_view = AdminAPIRootView.as_view(
                 root_urls=root_urls)
             urlpatterns.append(path('', root_view, name='api-root'))
+
+        # finally add the model_admin urls
+        for model, model_admin in self._registry.items():
+            self.admin_urls[model] = model_admin.urls
+
+        urlpatterns += [url for urls in self.admin_urls.values()
+                        for url in urls]
+
         return urlpatterns
 
     @property
@@ -343,7 +355,6 @@ class APIAdminSite():
             "site_url": site_url,
             "has_permission": request.user.is_active and request.user.is_staff,
             "available_apps": self.get_app_list(request),
-            "is_popup": False,
             "is_nav_sidebar_enabled": self.enable_nav_sidebar,
         }
 

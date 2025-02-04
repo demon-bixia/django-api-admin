@@ -14,6 +14,7 @@ from rest_framework.views import APIView
 
 from django_api_admin.utils.get_form_fields import get_form_fields
 from test_django_api_admin.models import Author
+from test_django_api_admin.serializers import AuthorSerializer
 
 
 class HelloWorldView(APIView):
@@ -21,6 +22,13 @@ class HelloWorldView(APIView):
         return Response({
             'message': 'hello world'
         })
+
+
+class AuthorDetailView(APIView):
+    def get(self, request, pk):
+        author = Author.objects.get(id=pk)
+        serializer = AuthorSerializer(author, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class TestView(APIView):
@@ -449,8 +457,3 @@ class TestView(APIView):
             pass
 
         return fields, SerializerClass, meta
-
-
-class TestDetailView(APIView):
-    def get(request, pk, format=None):
-        return Response({}, status=status.HTTP_200_OK)

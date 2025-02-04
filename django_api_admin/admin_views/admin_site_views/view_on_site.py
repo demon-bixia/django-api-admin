@@ -7,17 +7,39 @@ from django.utils.translation import gettext as _
 from rest_framework import status
 from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
-
 from rest_framework.views import APIView
+
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
+
+from django_api_admin.openapi import CommonAPIResponses
 
 
 class ViewOnSiteView(APIView):
     """
-    return the object's page url based on a content-type ID and an object ID.
+    Handles GET requests to retrieve an object's view URL on the site.
     """
     permission_classes = []
     admin_site = None
 
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                description="Successful retrieval of the object's view on site",
+                response=dict,
+                examples=[
+                    OpenApiExample(
+                        name="Success Response",
+                        summary="Example of a successful view on site response",
+                        description="Returns a URL where the object can be viewed on the site",
+                        value={"url": "http://localhost:8000/api/author/1/"},
+                        status_codes=["200"]
+                    )
+                ],
+            ),
+            403: CommonAPIResponses.permission_denied(),
+            401: CommonAPIResponses.unauthorized()
+        },
+    )
     def get(self, request, content_type_id, object_id):
         # Look up the object, making sure it's got a get_absolute_url() function.
         try:

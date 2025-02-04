@@ -1,6 +1,22 @@
 from drf_spectacular.utils import OpenApiResponse, OpenApiExample
 
 
+User = {
+    "id": 1,
+    "last_login": "2025-01-25T13:00:49.925221Z",
+    "is_superuser": True,
+    "username": "ms",
+    "first_name": "Muhammad",
+    "last_name": "Salah",
+    "email": "ms@email.com",
+    "is_staff": True,
+    "is_active": True,
+    "date_joined": "2025-01-24T11:43:43.500792Z",
+    "groups": [],
+    "user_permissions": []
+}
+
+
 class CommonAPIResponses:
     """Collection of standardized OpenAPI response templates."""
 
@@ -135,3 +151,39 @@ class CommonAPIResponses:
             "409": cls.conflict(),
             "500": cls.server_error()
         }
+
+
+class APIResponseExamples:
+    """
+    Provides an example of a successful API response for retrieving form field
+    """
+    @staticmethod
+    def field_attributes():
+        return OpenApiExample(
+            name="Success Response",
+            summary="Example of a successful field attribute response",
+            description="Retrieve form field attributes for the password change endpoint",
+            value={
+                "fields": [
+                        {
+                            "type": "CharField",
+                            "name": "field_name",
+                            "attrs": {
+                                "read_only": False,
+                                "write_only": True,
+                                "required": True,
+                                "default": None,
+                                "allow_blank": False,
+                                "allow_null": False,
+                                "label": "Field name",
+                                "help_text": None,
+                                "initial": "",
+                                "max_length": None,
+                                "min_length": None,
+                                "trim_whitespace": True
+                            }
+                        }
+                ]
+            },
+            status_codes=["200"],
+        )

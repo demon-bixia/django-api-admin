@@ -59,17 +59,18 @@ class InlineAPIModelAdmin(BaseAPIModelAdmin):
 
         info = (self.parent_model._meta.app_label, self.parent_model._meta.model_name,
                 self.opts.app_label, self.opts.model_name)
+        prefix = f'{self.model._meta.app_label}/{self.model._meta.model_name}'
 
         return [
-            path('list/', self.get_list_view(),
+            path(f'{prefix}/list/', self.get_list_view(),
                  name='%s_%s_%s_%s_list' % info),
-            path('add/', self.get_add_view(),
+            path(f'{prefix}/add/', self.get_add_view(),
                  name='%s_%s_%s_%s_add' % info),
-            path('<path:object_id>/detail/', self.get_detail_view(),
+            path(f'{prefix}/<path:object_id>/detail/', self.get_detail_view(),
                  name='%s_%s_%s_%s_detail' % info),
-            path('<path:object_id>/change/', self.get_change_view(),
+            path(f'{prefix}/<path:object_id>/change/', self.get_change_view(),
                  name='%s_%s_%s_%s_change' % info),
-            path('<path:object_id>/delete/', self.get_delete_view(),
+            path(f'{prefix}/<path:object_id>/delete/', self.get_delete_view(),
                  name='%s_%s_%s_%s_delete' % info),
         ]
 

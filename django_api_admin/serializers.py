@@ -247,3 +247,66 @@ class LanguageCatalogSerializer(serializers.Serializer):
     catalog = CatalogSerializer()
     formats = FormatsSerializer()
     plural = serializers.CharField(allow_null=True, required=False)
+
+
+class FieldAttributesSerializer(serializers.Serializer):
+    read_only = serializers.BooleanField(default=False)
+    write_only = serializers.BooleanField(default=False)
+    required = serializers.BooleanField(default=True)
+    default = serializers.CharField(allow_null=True, required=False)
+    allow_blank = serializers.BooleanField(default=False)
+    allow_null = serializers.BooleanField(default=False)
+    style = serializers.JSONField(default=dict)
+    label = serializers.CharField(allow_null=True, required=False)
+    help_text = serializers.CharField(allow_null=True, required=False)
+    initial = serializers.CharField(default="", required=False)
+    max_length = serializers.IntegerField(allow_null=True, required=False)
+    min_length = serializers.IntegerField(allow_null=True, required=False)
+    trim_whitespace = serializers.BooleanField(default=True)
+    min_value = serializers.FloatField(allow_null=True, required=False)
+    max_value = serializers.FloatField(allow_null=True, required=False)
+    format = serializers.CharField(allow_null=True, required=False)
+    input_formats = serializers.ListField(
+        child=serializers.CharField(allow_null=True, required=False)
+    )
+    choices = serializers.ListField(
+        child=serializers.ListField(
+            child=serializers.CharField()
+        )
+    )
+    html_cutoff = serializers.IntegerField()
+    html_cutoff_text = serializers.CharField()
+    allow_empty_files = serializers.BooleanField()
+    use_url = serializers.BooleanField()
+    allow_empty = serializers.BooleanField()
+    child = serializers.JSONField()
+
+
+class FieldSerializer(serializers.Serializer):
+    type = serializers.CharField()
+    name = serializers.CharField()
+    attrs = FieldAttributesSerializer()
+
+
+class FormFieldsSerializer(serializers.Serializer):
+    fields = FieldSerializer(many=True)
+
+
+class TokensSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+    access = serializers.CharField()
+
+
+class ObtainTokenResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    user = UserSerializer()
+    tokens = TokensSerializer()
+
+
+class SiteContextSerializer(serializers.Serializer):
+    site_title = serializers.CharField()
+    site_header = serializers.CharField()
+    site_url = serializers.CharField()
+    has_permission = serializers.BooleanField()
+    available_apps = AppSerializer(many=True)
+    is_nav_siderbar_enabled = serializers.BooleanField()

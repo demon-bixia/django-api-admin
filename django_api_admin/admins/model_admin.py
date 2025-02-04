@@ -295,32 +295,30 @@ class APIModelAdmin(BaseAPIModelAdmin):
 
     def get_urls(self):
         info = self.model._meta.app_label, self.model._meta.model_name
-
+        prefix = f'{self.model._meta.app_label}/{self.model._meta.model_name}'
         urlpatterns = [
-            path('list/', self.get_list_view(), name='%s_%s_list' % info),
-            path('changelist/', self.get_changelist_view(),
+            path(f'{prefix}/list/', self.get_list_view(),
+                 name='%s_%s_list' % info),
+            path(f'{prefix}/changelist/', self.get_changelist_view(),
                  name='%s_%s_changelist' % info),
-            path('perform_action/', self.get_handle_action_view(),
+            path('{prefix}/perform_action/', self.get_handle_action_view(),
                  name='%s_%s_perform_action' % info),
-            path('add/', self.get_add_view(), name='%s_%s_add' % info),
-            path('<path:object_id>/detail/', self.get_detail_view(),
+            path(f'{prefix}/add/', self.get_add_view(),
+                 name='%s_%s_add' % info),
+            path(f'{prefix}/<path:object_id>/detail/', self.get_detail_view(),
                  name='%s_%s_detail' % info),
-            path('<path:object_id>/delete/', self.get_delete_view(),
+            path(f'{prefix}/<path:object_id>/delete/', self.get_delete_view(),
                  name='%s_%s_delete' % info),
-            path('<path:object_id>/history/',
+            path(f'{prefix}/<path:object_id>/history/',
                  self.get_history_view(), name='%s_%s_history' % info),
-            path('<path:object_id>/change/', self.get_change_view(),
+            path(f'{prefix}/<path:object_id>/change/', self.get_change_view(),
                  name='%s_%s_change' % info),
         ]
 
         # add Inline admins urls
         for inline_class in self.inlines:
             inline = inline_class(self.model, self.admin_site)
-            opts = inline.model._meta
-            urlpatterns.insert(0, *[
-                path('%s/%s/' % (opts.app_label, opts.model_name),
-                     include(inline.urls)),
-            ])
+            urlpatterns += inline.urls
         return urlpatterns
 
     @property

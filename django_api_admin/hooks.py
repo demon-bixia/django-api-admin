@@ -1,7 +1,23 @@
 from django_api_admin.sites import all_sites
 
-# you could create a site_urls and admin_urls in the admin_site and model_admin classes
-# then you could match each url with the urls in path and give them the appropriate tag
+from drf_spectacular.generators import SchemaGenerator
+from drf_spectacular.settings import spectacular_settings
+
+
+def update_urls(urls, endpoints, site, result, tag_name):
+    for url in urls:
+        for endpoint in endpoints:
+            endpoint_url = site.url_prefix + endpoint[0]
+            if result['paths'].get(endpoint_url, None):
+                endpoint_url_path = endpoint[1][1:] if endpoint[1].startswith(
+                    '/') else endpoint[1]
+                if str(url.pattern) == endpoint_url_path and url.name != site.swagger_url_name:
+                    for method, body in result['paths'][endpoint_url].items():
+                        result['paths'][endpoint_url][method] = {
+                            **body,
+                            "tags": [tag_name]
+                        }
+    return result
 
 
 def modify_schema(result, generator, request, public):
@@ -20,31 +36,33 @@ def modify_schema(result, generator, request, public):
     }
 
     # edit the tags for each path based on the model_admin or admin_site
-    # Note:
-    # 1. if the urls are customized this way of generating the documentation must be changed
-    # 2. if the app is customized so that two sites can have the same name
-    #    this way of generating the documentation must be changed.
+    for site in all_sites:
+        # create a generator and parse the site urls so that we can compare them below
+        site_generator = spectacular_settings.DEFAULT_GENERATOR_CLASS(
+            patterns=site.site_urls)
+        site_generator.parse(request, True)
+        result = update_urls(
+            site.site_urls,
+            site_generator.endpoints,
+            site,
+            result,
+            site.name
+        )
 
-    # get the admin site name from the url that is the first part of the url
-    admin_name = next(iter(result['paths'].keys())).strip('/').split('/')[0]
-    # get the first matching admin site with the registered name
-    site = next((site for site in all_sites if site.name == 'api_admin'), None)
-    if site:
-        # construct a list of the names of the registered models
-        registered_models = {
-            model._meta.verbose_name for model in site._registry.keys()}
-        for url, path in result['paths'].items():
-            params = url.strip('/').split('/')
-            # if the model name is in the request url tag with the model name
-            if len(params) > 2 and params[2] in registered_models:
-                for method, body in path.items():
-                    result['paths'][url][method] = {
-                        **body, 'tags': [params[2]]
-                    }
-            else:
-                # otherwise tag with the site name
-                for method, body in path.items():
-                    result['paths'][url][method] = {
-                        **body, 'tags': [site.name]
-                    }
+        # update the urls for each registered model
+        for model in site._registry.keys():
+            model_urls = site.admin_urls.get(model, None)
+            if model_urls:
+                # create a generator and parse the admin urls so that we can compare them below
+                admin_generator = spectacular_settings.DEFAULT_GENERATOR_CLASS(
+                    patterns=model_urls)
+                admin_generator.parse(request, True)
+                result = update_urls(
+                    model_urls,
+                    admin_generator.endpoints,
+                    site,
+                    result,
+                    model._meta.verbose_name
+                )
+
     return result
