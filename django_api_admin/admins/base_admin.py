@@ -26,7 +26,8 @@ class BaseAPIModelAdmin:
     fields = None
     exclude = None
     fieldsets = None
-    serializer_class = ModelSerializer
+    base_serializer_class = ModelSerializer
+    serializer_class = None
     filter_vertical = ()
     filter_horizontal = ()
     radio_fields = {}
@@ -46,6 +47,10 @@ class BaseAPIModelAdmin:
         """
         Return a serializer class to be used in the model admin views
         """
+        # check if a serializer class has already been created
+        if self.serializer_class:
+            return self.serializer_class
+
         attrs = dict()
 
         # get all fields in fieldsets
@@ -70,7 +75,7 @@ class BaseAPIModelAdmin:
         attrs["Meta"] = Meta
 
         # if the serializer method
-        if isinstance(self.serializer_class, ModelSerializer):
+        if isinstance(self.base_serializer_class, ModelSerializer):
             # merge serializerfield_overrides with the ModelSerializer.serializer_field_mapping
             overrides = copy.deepcopy(ModelSerializer.serializer_field_mapping)
             for key, value in self.serializerfield_overrides.items():
@@ -79,11 +84,12 @@ class BaseAPIModelAdmin:
             attrs['serializer_field_mapping'] = self.serializerfield_overrides
 
         # dynamically construct a model serializer
-        return type(data['parent_class'])(
-            f'{self.model.__name__}Serializer',
+        self.serializer_class = type(data['parent_class'])(
+            f'{self.model.__name__}AdminSerializer',
             (data['parent_class'],),
             attrs
         )
+        return self.serializer_class
 
     def get_fields(self):
         """
@@ -110,15 +116,15 @@ class BaseAPIModelAdmin:
     def get_serializer_data(self):
         # get excluded fields
         exclude = list(self.exclude) if self.exclude else []
-        if not exclude and hasattr(self.serializer_class, 'Meta') and hasattr(self.serializer_class.Meta, 'exclude'):
-            exclude.extend(self.serializer_class.Meta.exclude)
+        if not exclude and hasattr(self.base_serializer_class, 'Meta') and hasattr(self.base_serializer_class.Meta, 'exclude'):
+            exclude.extend(self.base_serializer_class.Meta.exclude)
 
         # Remove declared serializer fields which are in readonly_fields.
         new_attrs = dict.fromkeys(
-            f for f in self.readonly_fields if f in self.serializer_class._declared_fields
+            f for f in self.readonly_fields if f in self.base_serializer_class._declared_fields
         )
         serializer_class = type(
-            self.serializer_class.__name__, (self.serializer_class,), new_attrs)
+            self.base_serializer_class.__name__, (self.base_serializer_class,), new_attrs)
 
         fields = self.fieldsets or self.fields
 
@@ -273,6 +279,6 @@ class BaseAPIModelAdmin:
         return DeleteView.as_view(**defaults)
 
     def serializer_defines_fields(self):
-        return hasattr(self.serializer_class, "_meta") and (
-            self.serializer_class._meta.fields is not None or self.serializer_class._meta.exclude is not None
+        return hasattr(self.base_serializer_class, "_meta") and (
+            self.base_serializer_class._meta.fields is not None or self.base_serializer_class._meta.exclude is not None
         )

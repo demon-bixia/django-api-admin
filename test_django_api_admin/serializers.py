@@ -2,7 +2,7 @@ from rest_framework import serializers
 from test_django_api_admin.models import Author
 
 
-class AuthorSerializer(serializers.ModelSerializer):
+class TestAuthorSerializer(serializers.ModelSerializer):
     """
     Serializer for the Author model.
     Serializes all the key fields and includes a URL for retrieving the detail view of the author.

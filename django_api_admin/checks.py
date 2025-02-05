@@ -398,7 +398,7 @@ class APIBaseModelAdminChecks:
 
     def _check_serializer(self, obj):
         """Check that serializer_class subclasses ModelSerializer."""
-        if not _issubclass(obj.serializer_class, ModelSerializer):
+        if not _issubclass(obj.base_serializer_class, ModelSerializer):
             return must_inherit_from(
                 parent="ModelSerializer", option="serializer", obj=obj, id="admin.E016"
             )

@@ -2,7 +2,7 @@ from django_api_admin.sites import all_sites
 from drf_spectacular.settings import spectacular_settings
 
 
-def update_urls(urls, endpoints, site, result, tag_name):
+def tag_paths(urls, endpoints, site, result, tag_name):
     for url in urls:
         for endpoint in endpoints:
             endpoint_url = site.url_prefix + endpoint[0]
@@ -39,7 +39,7 @@ def modify_schema(result, generator, request, public):
         site_generator = spectacular_settings.DEFAULT_GENERATOR_CLASS(
             patterns=site.site_urls)
         site_generator.parse(request, True)
-        result = update_urls(
+        result = tag_paths(
             site.site_urls,
             site_generator.endpoints,
             site,
@@ -55,7 +55,7 @@ def modify_schema(result, generator, request, public):
                 admin_generator = spectacular_settings.DEFAULT_GENERATOR_CLASS(
                     patterns=model_urls)
                 admin_generator.parse(request, True)
-                result = update_urls(
+                result = tag_paths(
                     model_urls,
                     admin_generator.endpoints,
                     site,

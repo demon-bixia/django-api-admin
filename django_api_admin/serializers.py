@@ -393,3 +393,7 @@ class BulkUpdatesResponseSerializer(serializers.Serializer):
     detail = serializers.CharField()
     updated_inlines = serializers.ListField(child=serializers.DictField())
     deleted_inlines = serializers.ListField(child=serializers.DictField())
+
+
+class ResponseMessageSerializer(serializers.Serializer):
+    detail = serializers.CharField()

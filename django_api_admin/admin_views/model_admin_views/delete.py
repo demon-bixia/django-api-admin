@@ -11,6 +11,7 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
 from django_api_admin.utils.quote import unquote
 from django_api_admin.constants.vars import TO_FIELD_VAR
 from django_api_admin.openapi import CommonAPIResponses
+from django_api_admin.serializers import ResponseMessageSerializer
 
 
 class DeleteView(APIView):
@@ -18,6 +19,7 @@ class DeleteView(APIView):
     Delete a single object from this model
     """
     permission_classes = []
+    serializer_class = ResponseMessageSerializer
     model_admin = None
 
     @extend_schema(

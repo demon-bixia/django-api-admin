@@ -153,7 +153,7 @@ class APIAdminSite():
             if not model._meta.swapped:
                 if options:
                     options['__module__'] = __name__
-                    admin_class = type("%sAdmin" %
+                    admin_class = type("%APIAdmin" %
                                        model.__name__, (admin_class,), options)
 
                 # Instantiate the admin class to save in the registry

@@ -83,10 +83,15 @@ class APIModelAdmin(BaseAPIModelAdmin):
 
     def get_action_serializer(self, request):
         from django_api_admin.serializers import ActionSerializer
-        return type('%sActionSerializer' % self.__class__.__name__, (ActionSerializer,), {
+
+        if self.action_serializer:
+            return self.action_serializer
+
+        self.action_serializer = type(f'{self.model.__name__}ActionSerializer', (ActionSerializer,), {
             'action': serializers.ChoiceField(choices=[*self.get_action_choices(request)]),
             'selected_ids': serializers.MultipleChoiceField(choices=[*self.get_selected_ids()])
         })
+        return self.action_serializer
 
     def get_paginator(self, queryset, per_page, orphans=0, allow_empty_first_page=True):
         return self.paginator(queryset, per_page, orphans, allow_empty_first_page)

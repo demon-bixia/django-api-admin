@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 
 from django_api_admin.utils.get_form_fields import get_form_fields
 from test_django_api_admin.models import Author
-from test_django_api_admin.serializers import AuthorSerializer
+from test_django_api_admin.serializers import TestAuthorSerializer
 
 
 class HelloWorldView(APIView):
@@ -25,9 +25,11 @@ class HelloWorldView(APIView):
 
 
 class AuthorDetailView(APIView):
+    serializer_class = TestAuthorSerializer
+
     def get(self, request, pk):
         author = Author.objects.get(id=pk)
-        serializer = AuthorSerializer(author, context={"request": request})
+        serializer = TestAuthorSerializer(author, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 

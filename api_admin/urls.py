@@ -8,7 +8,7 @@ urlpatterns = [
     # both the api admin and the default admin
     path('admin/', admin.site.urls),
     path('api_admin/', site.urls),
-    path('api/author/<pk>/',
+    path('api/author/<int:pk>/',
          views.AuthorDetailView.as_view(), name="author-detail"),
     # test your form fields.
     # path('api_admin/field_tests/<str:test_name>/', views.TestView.as_view()),

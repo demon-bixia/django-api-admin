@@ -16,7 +16,7 @@ class AppIndexView(APIView):
     """
     Lists models inside a given app.
     """
-    serializer_class = None
+    serializer_class = AppIndexSerializer
     permission_classes = []
     admin_site = None
 
@@ -50,9 +50,6 @@ class AppIndexView(APIView):
             'app': app_dict,
         }
         return Response(data, status=status.HTTP_200_OK)
-
-    def get_serializer_class(self):
-        return AppIndexSerializer
 
     def get_serializer(self, app_label):
         registered_app_labels = {
