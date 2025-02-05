@@ -3,7 +3,10 @@ from django.utils.translation import gettext_lazy as _
 
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, NotFound, ParseError
+from rest_framework.views import APIView
+
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
 
 from django_api_admin.utils.quote import unquote
 from django_api_admin.utils.diff_helper import ModelDiffHelper
@@ -12,75 +15,49 @@ from django_api_admin.utils.get_form_config import get_form_config
 from django_api_admin.utils.validate_bulk_edits import validate_bulk_edits
 from django_api_admin.utils.get_inlines import get_inlines
 from django_api_admin.constants.vars import TO_FIELD_VAR
-from rest_framework.views import APIView
+from django_api_admin.openapi import CommonAPIResponses, APIResponseExamples, BulkUpdates
+from django_api_admin.serializers import FormFieldsSerializer, BulkUpdatesResponseSerializer
 
 
 class ChangeView(APIView):
     """
     Change an existing instance of this model. if the models has inline models associated with it you 
     create, update and delete instances of the models associated with it.
-
-        {
-        "data": {
-            // the values to create new instance of the model
-            "name": "lorem ipsum"
-            ...
-        },
-        // the inline instances you want to create (optional)
-        "create_inlines": {
-            "books": [
-                {
-                    "title": "lorem ipsum"
-                    ...
-                },
-            ]
-        },
-        // the inline instances you want to update make sure you include a pk field (optional)
-        "update_inlines": {
-            "books": [
-                {
-                    "pk":10,
-                    "title": "lorem ipsum"
-                    ...
-                },
-            ]
-        },
-        // the inline instances you want to delete make sure you include a pk field (optional)
-        "delete_inlines": {
-            "books": [
-                {
-                    "pk":10
-                },
-            ]
-        }
-    }
     """
     serializer_class = None
     permission_classes = []
     model_admin = None
 
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                description="Successfully returned the field attributes list",
+                response=FormFieldsSerializer,
+                examples=[
+                    APIResponseExamples.field_attributes()
+                ]
+            ),
+            403: CommonAPIResponses.permission_denied(),
+            401: CommonAPIResponses.unauthorized()
+        },
+    )
     def get(self, request, object_id):
-        return self.update(request, object_id, self.model_admin)
+        obj = self.get_object(request, object_id)
+        # initiate the serializer based on the request method
+        serializer = self.get_serializer_instance(request, obj)
+        data = dict()
+        data['fields'] = get_form_fields(serializer, change=True)
+        data['config'] = get_form_config(self.model_admin)
+        inlines = get_inlines(request, self.model_admin, obj=obj)
+        if inlines:
+            data['inlines'] = inlines
+        return Response(data, status=status.HTTP_200_OK)
 
     def update(self, request, object_id):
         with transaction.atomic(using=router.db_for_write(self.model_admin.model)):
-            # validate the reverse to field reference
-            to_field = request.query_params.get(TO_FIELD_VAR)
-            if to_field and not self.model_admin.to_field_allowed(to_field):
-                return Response({'detail': _('The field %s cannot be referenced.') % to_field},
-                                status=status.HTTP_400_BAD_REQUEST)
-            obj = self.model_admin.get_object(
-                request, unquote(object_id), to_field)
+            obj = self.get_object(request, object_id)
             opts = self.model_admin.model._meta
             helper = ModelDiffHelper(obj)
-
-            # if the object doesn't exist respond with not found
-            if obj is None:
-                msg = _("%(name)s with ID “%(key)s” doesn't exist. Perhaps it was deleted?") % {
-                    'name': self.model_admin.model._meta.verbose_name,
-                    'key': unquote(object_id),
-                }
-                return Response({'detail': msg}, status=status.HTTP_404_NOT_FOUND)
 
             # test user change permission in this model.
             if not self.model_admin.has_change_permission(request):
@@ -88,16 +65,6 @@ class ChangeView(APIView):
 
             # initiate the serializer based on the request method
             serializer = self.get_serializer_instance(request, obj)
-
-            # if the method is get return the change form fields dictionary
-            if request.method == 'GET':
-                data = dict()
-                data['fields'] = get_form_fields(serializer, change=True)
-                data['config'] = get_form_config(self.model_admin)
-                inlines = get_inlines(request, self.model_admin, obj=obj)
-                if inlines:
-                    data['inlines'] = inlines
-                return Response(data, status=status.HTTP_200_OK)
 
             # update and log the changes to the object
             if serializer.is_valid():
@@ -157,9 +124,45 @@ class ChangeView(APIView):
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                description="Successfully returned the field attributes list",
+                response=BulkUpdatesResponseSerializer,
+                examples=[
+                    OpenApiExample(
+                        name="Update Success Response",
+                        summary="Example of a successful Update operation response",
+                        value=BulkUpdates,
+                        status_codes=["200"]
+                    )
+                ]
+            ),
+            403: CommonAPIResponses.permission_denied(),
+            401: CommonAPIResponses.unauthorized()
+        },
+    )
     def put(self, request, object_id):
         return self.update(request, object_id)
 
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                description="Successfully returned the field attributes list",
+                response=BulkUpdatesResponseSerializer,
+                examples=[
+                    OpenApiExample(
+                        name="Update Success Response",
+                        summary="Example of a successful Update operation response",
+                        value=BulkUpdates,
+                        status_codes=["200"]
+                    )
+                ]
+            ),
+            403: CommonAPIResponses.permission_denied(),
+            401: CommonAPIResponses.unauthorized()
+        },
+    )
     def patch(self, request, object_id):
         return self.update(request, object_id)
 
@@ -178,3 +181,23 @@ class ChangeView(APIView):
             serializer = self.serializer_class(instance=obj)
 
         return serializer
+
+    def get_object(self, request, object_id):
+        # validate the reverse to field reference
+        to_field = request.query_params.get(TO_FIELD_VAR)
+        if to_field and not self.model_admin.to_field_allowed(to_field):
+            raise ParseError(
+                {'detail': _('The field %s cannot be referenced.') % to_field})
+
+        obj = self.model_admin.get_object(
+            request, unquote(object_id), to_field)
+
+        # if the object doesn't exist respond with not found
+        if obj is None:
+            msg = _("%(name)s with ID “%(key)s” doesn't exist. Perhaps it was deleted?") % {
+                'name': self.model_admin.model._meta.verbose_name,
+                'key': unquote(object_id),
+            }
+            raise NotFound({'detail': msg})
+
+        return obj

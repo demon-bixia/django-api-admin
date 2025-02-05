@@ -4,48 +4,45 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.views import APIView
+
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
 
 from django_api_admin.utils.get_form_fields import get_form_fields
 from django_api_admin.utils.get_form_config import get_form_config
 from django_api_admin.utils.validate_bulk_edits import validate_bulk_edits
 from django_api_admin.utils.get_inlines import get_inlines
-
-from rest_framework.views import APIView
+from django_api_admin.openapi import CommonAPIResponses, APIResponseExamples
+from django_api_admin.serializers import FormFieldsSerializer
 
 
 class AddView(APIView):
     """
     Add new instances of this model. if this model has inline models associated with it 
     you can also add inline instances to this model.
-
-    a request body should look like this:
-
-    {
-        "data": {
-            // the values to create new instance of the model
-            "name": "lorem ipsum"
-            ...
-        },
-        // the inline instances you want to create (optional)
-        "create_inlines": {
-            "books": [
-                {
-                    "title": "lorem ipsum"
-                    ...
-                },
-                {
-                    "title": "lorem ipsum"
-                    ...
-                },
-            ]
-        }
-    }
     """
     serializer_class = None
     permission_classes = []
     model_admin = None
 
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                description="Successfully returned the field attributes list",
+                response=FormFieldsSerializer,
+                examples=[
+                    APIResponseExamples.field_attributes()
+                ]
+            ),
+            403: CommonAPIResponses.permission_denied(),
+            401: CommonAPIResponses.unauthorized()
+        },
+    )
     def get(self, request):
+        """
+        Handle GET requests to retrieve form field attributes and configuration
+        for the model admin. 
+        """
         data = dict()
         serializer = self.serializer_class()
         data['fields'] = get_form_fields(serializer)
@@ -56,6 +53,9 @@ class AddView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
     def post(self, request):
+        """
+        Handle POST requests to add a new instance of the model.
+        """
         with transaction.atomic(using=router.db_for_write(self.model_admin.model)):
             # if the user doesn't have added permission respond with permission denied
             if not self.model_admin.has_add_permission(request):

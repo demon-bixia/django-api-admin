@@ -16,6 +16,167 @@ User = {
     "user_permissions": []
 }
 
+ChangeList = {
+    'config': {
+        'actions_on_top': True,
+        'actions_on_bottom': False,
+        'actions_selection_counter': True,
+        'empty_value_display': '-',
+        'list_display': [
+            'name', 'age', 'user', 'is_old_enough', 'title', 'gender'
+        ],
+        'list_display_links': ['name'],
+        'list_editable': ['title'],
+        'exclude': ['gender'],
+        'show_full_result_count': True,
+        'list_per_page': 6,
+        'list_max_show_all': 200,
+        'date_hierarchy': 'date_joined',
+        'search_help_text': None,
+        'sortable_by': None,
+        'search_fields': ['name', 'publisher__name'],
+        'preserve_filters': True,
+        'full_count': 1,
+        'result_count': 1,
+        'action_choices': [
+            ['delete_selected', 'Delete selected authors'],
+            ['make_old', 'make all authors old'],
+            ['make_young', 'make all authors young']
+        ],
+        'filters': [
+            {
+                'title': 'is vip',
+                'choices': [
+                    {'selected': True, 'query_string': '?', 'display': 'All'},
+                    {'selected': False, 'query_string': '?is_vip__exact=1',
+                        'display': 'Yes'},
+                    {'selected': False, 'query_string': '?is_vip__exact=0',
+                        'display': 'No'}
+                ]
+            },
+            {
+                'title': 'age',
+                'choices': [
+                    {'selected': True, 'query_string': '?', 'display': 'All'},
+                    {'selected': False, 'query_string': '?age__exact=60',
+                        'display': 'senior'},
+                    {'selected': False, 'query_string': '?age__exact=1',
+                        'display': 'baby'},
+                    {'selected': False, 'query_string': '?age__exact=2',
+                        'display': 'also a baby'}
+                ]
+            }
+        ],
+        'list_display_fields': ['name', 'age', 'user', 'title'],
+        'editing_fields': {
+            'title': {
+                'type': 'CharField',
+                'name': 'title',
+                'attrs': {
+                    'read_only': False,
+                    'write_only': False,
+                    'required': False,
+                    'default': None,
+                    'allow_blank': False,
+                    'allow_null': True,
+                    'style': {},
+                    'label': 'Title',
+                    'help_text': None,
+                    'initial': '',
+                    'max_length': 20,
+                    'min_length': None,
+                    'trim_whitespace': True
+                }
+            }
+        }
+    },
+    'columns': [
+        {'field': 'name', 'headerName': 'name'},
+        {'field': 'age', 'headerName': 'age'},
+        {'field': 'user', 'headerName': 'user'},
+        {'field': 'is_old_enough', 'headerName': 'is this author old enough'},
+        {'field': 'title', 'headerName': 'title'}
+    ],
+    'rows': [
+        {
+            'change_url': 'http://localhost:8000/api_admin/test_django_api_admin/author/1/change/',
+            'id': 1,
+            'cells': {
+                'name': 'Muhammad',
+                'age': '60',
+                'user': 'ms',
+                'is_old_enough': True,
+                'title': '-'
+            }
+        }
+    ]
+}
+
+CrudOperation = {
+    "detail": "The author “René Descartes” was changed successfully.",
+    "data": {
+        "id": 1,
+        "name": "Renene Descartes",
+        "age": 60,
+        "is_vip": True,
+        "date_joined": "2025-02-05T04:12:12.191849Z",
+        "title": None,
+        "user": 1,
+        "publisher": [1],
+        "pk": 1
+    },
+}
+
+BulkUpdates = {
+    **CrudOperation,
+    "updated_inlines": [
+        {
+            'id': 1,
+            'title': 'The book of nine secrets',
+            'author': 1,
+            'credits': [2], 'pk': 1},
+        {'id': 2, 'title': 'purple thunder lightning technique',
+         'author': 1, 'credits': [2], 'pk': 2}
+    ],
+    "deleted_inlines": [{'id': 3, 'title': 'Pro git', 'author': 1, 'credits': [], 'pk': 3}]
+}
+
+
+class APIResponseExamples:
+    """
+    Provides an example of a successful API response for retrieving form field
+    """
+    @staticmethod
+    def field_attributes():
+        return OpenApiExample(
+            name="Success Response",
+            summary="Example of a successful field attribute response",
+            description="Retrieve form field attributes for the password change endpoint",
+            value={
+                "fields": [
+                    {
+                        "type": "CharField",
+                        "name": "field_name",
+                        "attrs": {
+                            "read_only": False,
+                            "write_only": True,
+                            "required": True,
+                            "default": None,
+                            "allow_blank": False,
+                            "allow_null": False,
+                            "label": "Field name",
+                            "help_text": None,
+                            "initial": "",
+                            "max_length": None,
+                            "min_length": None,
+                            "trim_whitespace": True
+                        }
+                    }
+                ]
+            },
+            status_codes=["200"],
+        )
+
 
 class CommonAPIResponses:
     """Collection of standardized OpenAPI response templates."""
@@ -137,53 +298,4 @@ class CommonAPIResponses:
                     status_codes=["500"]
                 )
             ]
-        )
-
-    @classmethod
-    def get_common_responses(cls):
-        """Returns a dictionary of common responses used in most endpoints."""
-        return {
-            "400": cls.bad_request(),
-            "401": cls.unauthorized(),
-            "403": cls.permission_denied(),
-            "404": cls.not_found(),
-            "405": cls.method_not_allowed(),
-            "409": cls.conflict(),
-            "500": cls.server_error()
-        }
-
-
-class APIResponseExamples:
-    """
-    Provides an example of a successful API response for retrieving form field
-    """
-    @staticmethod
-    def field_attributes():
-        return OpenApiExample(
-            name="Success Response",
-            summary="Example of a successful field attribute response",
-            description="Retrieve form field attributes for the password change endpoint",
-            value={
-                "fields": [
-                        {
-                            "type": "CharField",
-                            "name": "field_name",
-                            "attrs": {
-                                "read_only": False,
-                                "write_only": True,
-                                "required": True,
-                                "default": None,
-                                "allow_blank": False,
-                                "allow_null": False,
-                                "label": "Field name",
-                                "help_text": None,
-                                "initial": "",
-                                "max_length": None,
-                                "min_length": None,
-                                "trim_whitespace": True
-                            }
-                        }
-                ]
-            },
-            status_codes=["200"],
         )

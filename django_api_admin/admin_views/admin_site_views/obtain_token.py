@@ -8,9 +8,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiResponse
 
-from django_api_admin.openapi import CommonAPIResponses, APIResponseExamples, User
 from django_api_admin.utils.get_form_fields import get_form_fields
-from django_api_admin.serializers import ObtainTokenResponseSerializer, FormFieldsSerializer
+from django_api_admin.openapi import CommonAPIResponses, APIResponseExamples, User
+from django_api_admin.serializers import FormFieldsSerializer, ObtainTokenResponseSerializer
 
 
 class ObtainTokenView(APIView):
@@ -24,11 +24,11 @@ class ObtainTokenView(APIView):
     @extend_schema(
         responses={
             200: OpenApiResponse(
-                description="Successful retrieval of the token view field attributes",
+                description="Successfully returned the field attributes list",
                 response=FormFieldsSerializer,
                 examples=[
                     APIResponseExamples.field_attributes()
-                ],
+                ]
             ),
             403: CommonAPIResponses.permission_denied(),
             401: CommonAPIResponses.unauthorized()

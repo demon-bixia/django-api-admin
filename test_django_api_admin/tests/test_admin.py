@@ -117,7 +117,7 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
         url = reverse('api_admin:%s_%s_delete' %
                       self.author_info, kwargs={'object_id': author.pk})
         response = self.client.post(url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 204)
         self.assertFalse(Author.objects.filter(pk=author.pk).exists())
         self.assertEqual(
             response.data['detail'], 'The author “test” was deleted successfully.')

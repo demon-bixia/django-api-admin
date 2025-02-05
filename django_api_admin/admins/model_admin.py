@@ -10,7 +10,6 @@ from rest_framework import serializers
 
 from django_api_admin.filters import SimpleListFilter
 from django_api_admin.admins.base_admin import BaseAPIModelAdmin
-from django_api_admin.admin_views.model_admin_views.handle_action import HandleActionView
 from django_api_admin.utils.get_content_type_for_model import get_content_type_for_model
 from django_api_admin.utils.lookup_spawns_duplicates import lookup_spawns_duplicates
 from django_api_admin.utils.model_format_dict import model_format_dict
@@ -301,7 +300,7 @@ class APIModelAdmin(BaseAPIModelAdmin):
                  name='%s_%s_list' % info),
             path(f'{prefix}/changelist/', self.get_changelist_view(),
                  name='%s_%s_changelist' % info),
-            path('{prefix}/perform_action/', self.get_handle_action_view(),
+            path(f'{prefix}/perform_action/', self.get_handle_action_view(),
                  name='%s_%s_perform_action' % info),
             path(f'{prefix}/add/', self.get_add_view(),
                  name='%s_%s_add' % info),
@@ -441,6 +440,8 @@ class APIModelAdmin(BaseAPIModelAdmin):
         return ChangeListView.as_view(**defaults)
 
     def get_handle_action_view(self):
+        from django_api_admin.admin_views.model_admin_views.handle_action import HandleActionView
+
         defaults = {
             'permission_classes': self.admin_site.default_permission_classes,
             'authentication_classes': self.admin_site.authentication_classes,

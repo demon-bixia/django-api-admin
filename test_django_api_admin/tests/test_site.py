@@ -104,7 +104,7 @@ class APIAdminSiteTestCase(APITestCase, URLPatternsTestCase):
         url = reverse('api_admin:language_catalog')
         response = self.client.get(url, Accept_Language="ar")
         self.assertEqual(response.status_code, 200)
-        data = json.loads(response.data)
+        self.assertIsNotNone(response.data['catalog'])
 
     def test_permission_denied(self):
         # create a non-staff user

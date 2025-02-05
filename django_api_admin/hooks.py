@@ -1,6 +1,4 @@
 from django_api_admin.sites import all_sites
-
-from drf_spectacular.generators import SchemaGenerator
 from drf_spectacular.settings import spectacular_settings
 
 

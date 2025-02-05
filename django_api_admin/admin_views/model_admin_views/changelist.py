@@ -7,72 +7,45 @@ from rest_framework.views import APIView
 from rest_framework.reverse import reverse
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
+from rest_framework.views import APIView
+
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiResponse
 
 from django_api_admin.utils.get_form_fields import get_form_fields
 from django_api_admin.utils.label_for_field import label_for_field
 from django_api_admin.utils.lookup_field import lookup_field
 from django_api_admin.exceptions import IncorrectLookupParameters
-from rest_framework.views import APIView
+from django_api_admin.serializers import ChangeListSerializer, ChangelistResponseSerializer
+from django_api_admin.openapi import CommonAPIResponses, ChangeList
 
 
 class ChangeListView(APIView):
     """
     Return a JSON object representing the django admin changelist table.
     supports querystring filtering, pagination and search also changes based on list display.
-    Note: this is different from the list all objects view.
-    example of returned JSON object:
-
-    {
-        config: {
-            "list_display": ["name", "age"],
-            "list_display_links": ["name"],
-            "list_filter": ["is_vip"],
-            "result_count": 1,
-            "full_result_count": 1,
-            "list_editable": ["is_vip"],
-
-            actions_list = [
-                ['delete_selected', 'delete selected authors'],
-                ['make_old', 'make all others old']
-            ]
-
-            filters: [
-                {'name' : 'is_vip', 'choices': ['All', 'Yes', 'No']}
-            ],
-
-            editing_fields: {
-                "name": {
-                    "name":"name",
-                    "type": "CharField",
-                    "attrs": {},
-                }
-            }
-        },
-
-        "change_list": {
-            "columns": [
-                    {"field": "name", "headerName" "name"},
-                    {"field": "age", "headerName": "age"},
-                    {"field": "is_vip"", "headerName":"is_this_author_a_vip"}
-                ],
-
-            "rows": [
-                {
-                    'id': 1,
-                    'change_url': 'https://localhost:8000/api_admin/authors/1/change/',
-                    'cells': {
-                        "name": "muhammad",
-                        "age": 20,
-                        "vip": false
-                    }
-                }
-            ],
-        }
-    }
     """
     permission_classes = []
+    serializer_class = ChangelistResponseSerializer
     model_admin = None
 
+    @extend_schema(
+        parameters=[ChangeListSerializer],
+        responses={
+            200: OpenApiResponse(
+                description="Retrieve a list of records with optional filtering and pagination",
+                response=ChangelistResponseSerializer,
+                examples=[OpenApiExample(
+                    name="Success Response",
+                    summary="Example of a successful changelist retrieval",
+                    description="Returns a paginated list of records with optional filters applied.",
+                    value=ChangeList,
+                    status_codes=["200"],
+                )]
+            ),
+            403: CommonAPIResponses.permission_denied(),
+            401: CommonAPIResponses.unauthorized(),
+        }
+    )
     def get(self, request):
         try:
             cl = self.model_admin.get_changelist_instance(request)

@@ -162,11 +162,15 @@ class ActionSerializer(serializers.Serializer):
     select_across = serializers.BooleanField(required=False, default=0)
 
 
-class ChangeListSearchSerializer(serializers.Serializer):
+class ChangeListSerializer(serializers.Serializer):
     """
     validates the changelist querystring
     """
     q = serializers.CharField(required=False, trim_whitespace=False)
+    p = serializers.IntegerField(required=False, min_value=1)
+    all = serializers.BooleanField(required=False)
+    o = serializers.CharField(required=False)
+    _to_field = serializers.CharField(required=False)
 
 
 class AppIndexSerializer(serializers.Serializer):
@@ -310,3 +314,82 @@ class SiteContextSerializer(serializers.Serializer):
     has_permission = serializers.BooleanField()
     available_apps = AppSerializer(many=True)
     is_nav_siderbar_enabled = serializers.BooleanField()
+
+
+class ActionChoiceSerializer(serializers.Serializer):
+    action = serializers.CharField()
+    description = serializers.CharField()
+
+
+class FilterChoiceSerializer(serializers.Serializer):
+    selected = serializers.BooleanField()
+    query_string = serializers.CharField()
+    display = serializers.CharField()
+
+
+class FilterSerializer(serializers.Serializer):
+    title = serializers.CharField()
+    choices = FilterChoiceSerializer(many=True)
+
+
+class EditingFieldSerializer(serializers.Serializer):
+    type = serializers.CharField()
+    name = serializers.CharField()
+    attrs = serializers.DictField()
+
+
+class ConfigSerializer(serializers.Serializer):
+    actions_on_top = serializers.BooleanField()
+    actions_on_bottom = serializers.BooleanField()
+    actions_selection_counter = serializers.BooleanField()
+    empty_value_display = serializers.CharField()
+    list_display = serializers.ListField(child=serializers.CharField())
+    list_display_links = serializers.ListField(child=serializers.CharField())
+    list_editable = serializers.ListField(child=serializers.CharField())
+    exclude = serializers.ListField(child=serializers.CharField())
+    show_full_result_count = serializers.BooleanField()
+    list_per_page = serializers.IntegerField()
+    list_max_show_all = serializers.IntegerField()
+    date_hierarchy = serializers.CharField()
+    search_help_text = serializers.CharField(allow_null=True)
+    sortable_by = serializers.ListField(
+        child=serializers.CharField(), allow_null=True)
+    search_fields = serializers.ListField(child=serializers.CharField())
+    preserve_filters = serializers.BooleanField()
+    full_count = serializers.IntegerField()
+    result_count = serializers.IntegerField()
+    action_choices = ActionChoiceSerializer(many=True)
+    filters = FilterSerializer(many=True)
+    list_display_fields = serializers.ListField(child=serializers.CharField())
+    editing_fields = serializers.DictField(child=EditingFieldSerializer())
+
+
+class ColumnSerializer(serializers.Serializer):
+    field = serializers.CharField()
+    headerName = serializers.CharField()
+
+
+class CellSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    age = serializers.CharField()
+    user = serializers.CharField()
+    is_old_enough = serializers.BooleanField()
+    title = serializers.CharField()
+
+
+class RowSerializer(serializers.Serializer):
+    change_url = serializers.URLField()
+    id = serializers.IntegerField()
+    cells = CellSerializer()
+
+
+class ChangelistResponseSerializer(serializers.Serializer):
+    config = ConfigSerializer()
+    columns = ColumnSerializer(many=True)
+    rows = RowSerializer(many=True)
+
+
+class BulkUpdatesResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    updated_inlines = serializers.ListField(child=serializers.DictField())
+    deleted_inlines = serializers.ListField(child=serializers.DictField())

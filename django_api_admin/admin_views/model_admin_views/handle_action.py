@@ -5,7 +5,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
 
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
+
 from django_api_admin.utils.get_form_fields import get_form_fields
+from django_api_admin.openapi import CommonAPIResponses, APIResponseExamples
+from django_api_admin.serializers import FormFieldsSerializer
 
 
 class IncorrectLookupParameters(Exception):
@@ -14,26 +18,52 @@ class IncorrectLookupParameters(Exception):
 
 class HandleActionView(APIView):
     """
-        Preform admin actions using json.
-        json object would look like:
-        {
-        action: 'delete_selected',
-        selected_ids: [
-                1,
-                2,
-                3
-            ],
-        select_across: false
-        }
+    Preform admin actions on objects using json.
     """
     permission_classes = []
     model_admin = None
 
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                description="Successfully returned the field attributes list",
+                response=FormFieldsSerializer,
+                examples=[
+                    APIResponseExamples.field_attributes()
+                ]
+            ),
+            403: CommonAPIResponses.permission_denied(),
+            401: CommonAPIResponses.unauthorized()
+        },
+    )
     def get(self, request):
+        """
+        Handle GET requests to retrieve a list of form field attributes for
+        the admin action.
+        """
         serializer = self.model_admin.get_action_serializer(request)()
         form_fields = get_form_fields(serializer)
         return Response({'fields': form_fields}, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                description="Action executed successfully on selected objects",
+                response=dict,
+                examples=[
+                    OpenApiExample(
+                        name="Success Response",
+                        summary="Example of a successful action execution",
+                        description="Returns a success message after performing the selected action on chosen objects",
+                        value={"detail": "action was performed successfully"},
+                        status_codes=["200"]
+                    )
+                ]
+            ),
+            403: CommonAPIResponses.permission_denied(),
+            401: CommonAPIResponses.unauthorized()
+        }
+    )
     def post(self, request):
         serializer = self.model_admin.get_action_serializer(
             request)(data=request.data)
@@ -68,3 +98,6 @@ class HandleActionView(APIView):
                 return Response({'detail': msg}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get_serializer_class(self):
+        return self.model_admin.get_action_serializer(request=self.request)

@@ -9,7 +9,7 @@ from django.utils.http import urlencode
 
 from django_api_admin.exceptions import DisallowedModelAdminLookup, IncorrectLookupParameters
 from django_api_admin.filters import FieldListFilter
-from django_api_admin.serializers import ChangeListSearchSerializer
+from django_api_admin.serializers import ChangeListSerializer
 from django_api_admin.utils.get_fields_from_path import get_fields_from_path
 from django_api_admin.utils.lookup_spawns_duplicates import lookup_spawns_duplicates
 from django_api_admin.utils.prepare_lookup_value import prepare_lookup_value
@@ -17,7 +17,7 @@ from django_api_admin.constants.vars import TO_FIELD_VAR, IS_POPUP_VAR, ALL_VAR,
 
 
 class ChangeList:
-    search_serializer_class = ChangeListSearchSerializer
+    serializer_class = ChangeListSerializer
 
     def __init__(
         self,
@@ -57,7 +57,7 @@ class ChangeList:
         self.sortable_by = sortable_by
         self.search_help_text = search_help_text
 
-        search_serializer = self.search_serializer_class(data=request.GET)
+        search_serializer = self.serializer_class(data=request.GET)
         if not search_serializer.is_valid():
             errors = [
                 {'detail': ", ".join(error)}

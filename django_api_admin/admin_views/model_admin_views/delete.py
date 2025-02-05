@@ -4,10 +4,13 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.views import APIView
+
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
 
 from django_api_admin.utils.quote import unquote
 from django_api_admin.constants.vars import TO_FIELD_VAR
-from rest_framework.views import APIView
+from django_api_admin.openapi import CommonAPIResponses
 
 
 class DeleteView(APIView):
@@ -17,6 +20,27 @@ class DeleteView(APIView):
     permission_classes = []
     model_admin = None
 
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                description="Successfully deleted the selected objects",
+                response=dict,
+                examples=[
+                    OpenApiExample(
+                        name="Delete Success Response",
+                        summary="Example of a successful delete operation",
+                        description="Returns a success message after deleting the selected objects",
+                        value={
+                            "detail": "The object was deleted successfully."
+                        },
+                        status_codes=["200"]
+                    )
+                ]
+            ),
+            403: CommonAPIResponses.permission_denied(),
+            401: CommonAPIResponses.unauthorized()
+        }
+    )
     def delete(self, request, object_id):
         with transaction.atomic(using=router.db_for_write(self.model_admin.model)):
             opts = self.model_admin.model._meta
@@ -49,7 +73,28 @@ class DeleteView(APIView):
             return Response({'detail': _('The %(name)s “%(obj)s” was deleted successfully.') % {
                 'name': opts.verbose_name,
                 'obj': str(obj),
-            }}, status=status.HTTP_200_OK)
+            }}, status=status.HTTP_204_NO_CONTENT)
 
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                description="Successfully deleted the selected objects",
+                response=dict,
+                examples=[
+                    OpenApiExample(
+                        name="Delete Success Response",
+                        summary="Example of a successful delete operation",
+                        description="Returns a success message after deleting the selected objects",
+                        value={
+                            "detail": "The object was deleted successfully."
+                        },
+                        status_codes=["200"]
+                    )
+                ]
+            ),
+            403: CommonAPIResponses.permission_denied(),
+            401: CommonAPIResponses.unauthorized()
+        }
+    )
     def post(self, *args, **kwargs):
         return self.delete(*args, **kwargs)
