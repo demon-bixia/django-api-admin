@@ -253,16 +253,11 @@ Don't forget to give the project a star! Thanks again!
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-### Contributors
+### Top Contributors
 
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable -->
-
-<!-- markdownlint-restore -->
-<!-- prettier-ignore-end -->
-
-<!-- ALL-CONTRIBUTORS-LIST:END -->
+<a href="https://github.com/demon-bixia/django-api-admin/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=demon-bixia/django-api-admin" />
+</a>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
