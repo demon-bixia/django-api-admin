@@ -31,7 +31,8 @@ class ChangeView(APIView):
     @extend_schema(
         responses={
             200: OpenApiResponse(
-                description="Successfully returned the field attributes list",
+                description=_(
+                    "Successfully returned the field attributes list"),
                 response=FormFieldsSerializer,
                 examples=[
                     APIResponseExamples.field_attributes()
@@ -127,12 +128,14 @@ class ChangeView(APIView):
     @extend_schema(
         responses={
             200: OpenApiResponse(
-                description="Successfully returned the field attributes list",
+                description=_(
+                    "Successfully returned the field attributes list"),
                 response=BulkUpdatesResponseSerializer,
                 examples=[
                     OpenApiExample(
-                        name="Update Success Response",
-                        summary="Example of a successful Update operation response",
+                        name=_("Update Success Response"),
+                        summary=_(
+                            "Example of a successful Update operation response"),
                         value=BulkUpdates,
                         status_codes=["200"]
                     )
@@ -148,12 +151,14 @@ class ChangeView(APIView):
     @extend_schema(
         responses={
             200: OpenApiResponse(
-                description="Successfully returned the field attributes list",
+                description=_(
+                    "Successfully returned the field attributes list"),
                 response=BulkUpdatesResponseSerializer,
                 examples=[
                     OpenApiExample(
-                        name="Update Success Response",
-                        summary="Example of a successful Update operation response",
+                        name=_("Update Success Response"),
+                        summary=_(
+                            "Example of a successful Update operation response"),
                         value=BulkUpdates,
                         status_codes=["200"]
                     )

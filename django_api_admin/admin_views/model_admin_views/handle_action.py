@@ -48,13 +48,15 @@ class HandleActionView(APIView):
     @extend_schema(
         responses={
             200: OpenApiResponse(
-                description="Action executed successfully on selected objects",
+                description=_(
+                    "Action executed successfully on selected objects"),
                 response=dict,
                 examples=[
                     OpenApiExample(
-                        name="Success Response",
-                        summary="Example of a successful action execution",
-                        description="Returns a success message after performing the selected action on chosen objects",
+                        name=_("Success Response"),
+                        summary=_("Example of a successful action execution"),
+                        description=_(
+                            "Returns a success message after performing the selected action on chosen objects"),
                         value={"detail": "action was performed successfully"},
                         status_codes=["200"]
                     )

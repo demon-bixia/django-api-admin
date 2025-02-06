@@ -1,3 +1,4 @@
+from django.utils.translation import gettext as _
 from django_api_admin.sites import all_sites
 from drf_spectacular.settings import spectacular_settings
 
@@ -21,10 +22,10 @@ def tag_paths(urls, endpoints, site, result, tag_name):
 def modify_schema(result, generator, request, public):
     # change the api info
     result['info'] = {
-        'title': 'Django API Admin',
-        'description': 'A rewrite of django.contrib.admin as a Restful API, intended for use'
-        'in the process of creating custom admin panels using frontend frameworks like'
-        'react, and vue while maintaining an API similar to django.contrib.admin.',
+        'title': _('Django API Admin'),
+        'description': _('A rewrite of django.contrib.admin as a Restful API, intended for use'
+                         'in the process of creating custom admin panels using frontend frameworks like'
+                         'react, and vue while maintaining an API similar to django.contrib.admin.'),
         'contact': 'msbizzacc0unt@gmail.com',
         'license': {
             'name': 'MIT License',

@@ -25,12 +25,13 @@ class AutoCompleteView(APIView):
         parameters=[AutoCompleteSerializer],
         responses={
             200: OpenApiResponse(
-                description="Successful autocomplete response",
+                description=_("Successful autocomplete response"),
                 response=AutoCompleteSerializer,
                 examples=[
                     OpenApiExample(
-                        name="Success Response",
-                        summary="Example of a successful autocomplete response",
+                        name=_("Success Response"),
+                        summary=_(
+                            "Example of a successful autocomplete response"),
                         description="Returns matching records based on the search term",
                         value=[{
                             "id": 1,
@@ -50,7 +51,8 @@ class AutoCompleteView(APIView):
             403: CommonAPIResponses.permission_denied(),
             401: CommonAPIResponses.unauthorized(),
         },
-        description="Endpoint for autocomplete functionality on model fields"
+        description=_(
+            "Endpoint for autocomplete functionality on model fields")
     )
     def get(self, request):
         """
@@ -136,8 +138,8 @@ class AutoCompleteView(APIView):
 
         # Validate suitability of objects.
         if not getattr(model_admin, "search_fields"):
-            raise ParseError(_(f'{type(
-                model_admin).__qualname__} must have search_fields for the autocomplete_view."'))
+            raise ParseError(_('%s must have search_fields for the autocomplete_view."') % type(
+                model_admin).__qualname__)
 
         to_field_name = getattr(
             source_field.remote_field, "field_name", remote_model._meta.pk.attname

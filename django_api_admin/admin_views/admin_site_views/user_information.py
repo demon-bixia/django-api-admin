@@ -17,13 +17,15 @@ class UserInformation(APIView):
     @extend_schema(
         responses={
             200: OpenApiResponse(
-                description="Successful retrieval of user information",
+                description=_("Successful retrieval of user information"),
                 response=UserSerializer,
                 examples=[
                     OpenApiExample(
-                        name="User Information",
-                        summary="Example of a successful user information retrieval response",
-                        description="Returns details of the user's information",
+                        name=_("User Information"),
+                        summary=_(
+                            "Example of a successful user information retrieval response"),
+                        description=_(
+                            "Returns details of the user's information"),
                         value=User,
                         status_codes=["200"]
                     )

@@ -24,7 +24,8 @@ class ObtainTokenView(APIView):
     @extend_schema(
         responses={
             200: OpenApiResponse(
-                description="Successfully returned the field attributes list",
+                description=_(
+                    "Successfully returned the field attributes list"),
                 response=FormFieldsSerializer,
                 examples=[
                     APIResponseExamples.field_attributes()
@@ -42,13 +43,15 @@ class ObtainTokenView(APIView):
     @extend_schema(
         responses={
             200: OpenApiResponse(
-                description="Successful token obtainment",
+                description=_("Successful token obtainment"),
                 response=ObtainTokenResponseSerializer,
                 examples=[
                     OpenApiExample(
-                        name="Success Response",
-                        summary="Example of a successful token obtain response",
-                        description="Returns a pair of tokens containing both the refresh and access tokens",
+                        name=_("Success Response"),
+                        summary=_(
+                            "Example of a successful token obtain response"),
+                        description=_(
+                            "Returns a pair of tokens containing both the refresh and access tokens"),
                         value={
                             "detail": "you are logged in successfully",
                             "user": User,

@@ -22,7 +22,8 @@ class PasswordChangeView(APIView):
     @extend_schema(
         responses={
             200: OpenApiResponse(
-                description="Successfully returned the field attributes list",
+                description=_(
+                    "Successfully returned the field attributes list"),
                 response=FormFieldsSerializer,
                 examples=[
                     APIResponseExamples.field_attributes()
@@ -44,13 +45,15 @@ class PasswordChangeView(APIView):
     @extend_schema(
         responses={
             200: OpenApiResponse(
-                description="Successful change of the user's password",
+                description=_("Successful change of the user's password"),
                 response=dict,
                 examples=[
                     OpenApiExample(
-                        name="Success Response",
-                        summary="Example of a successful password change response",
-                        description="Returns a message confirming the password change",
+                        name=_("Success Response"),
+                        summary=_(
+                            "Example of a successful password change response"),
+                        description=_(
+                            "Returns a message confirming the password change"),
                         value={"detail": "Your password was changed"},
                         status_codes=["200"]
                     )

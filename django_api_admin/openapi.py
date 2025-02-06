@@ -1,3 +1,4 @@
+from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import OpenApiResponse, OpenApiExample
 
 
@@ -149,9 +150,10 @@ class APIResponseExamples:
     @staticmethod
     def field_attributes():
         return OpenApiExample(
-            name="Success Response",
-            summary="Example of a successful field attribute response",
-            description="Retrieve form field attributes for the password change endpoint",
+            name=_("Success Response"),
+            summary=_("Example of a successful field attribute response"),
+            description=_(
+                "Retrieve form field attributes for the password change endpoint"),
             value={
                 "fields": [
                     {
@@ -184,14 +186,14 @@ class CommonAPIResponses:
     @staticmethod
     def permission_denied():
         return OpenApiResponse(
-            description="Permission denied",
+            description=_("Permission denied"),
             response=dict,
             examples=[
                 OpenApiExample(
-                    name="Permission Denied",
-                    summary="Permission denied response",
+                    name=_("Permission Denied"),
+                    summary=_("Permission denied response"),
                     value={
-                        "detail": "You do not have permission to perform this action."
+                        "detail": _("You do not have permission to perform this action.")
                     },
                     status_codes=["403"]
                 )
@@ -201,14 +203,14 @@ class CommonAPIResponses:
     @staticmethod
     def not_found():
         return OpenApiResponse(
-            description="Resource not found",
+            description=_("Resource not found"),
             response=dict,
             examples=[
                 OpenApiExample(
-                    name="Not Found",
-                    summary="Resource not found response",
+                    name=_("Not Found"),
+                    summary=_("Resource not found response"),
                     value={
-                        "detail": "The requested resource was not found."
+                        "detail": _("The requested resource was not found.")
                     },
                     status_codes=["404"]
                 )
@@ -218,14 +220,14 @@ class CommonAPIResponses:
     @staticmethod
     def bad_request():
         return OpenApiResponse(
-            description="Bad request",
+            description=_("Bad request"),
             response=dict,
             examples=[
                 OpenApiExample(
-                    name="Bad Request",
-                    summary="Invalid request parameters or data",
+                    name=_("Bad Request"),
+                    summary=_("Invalid request parameters or data"),
                     value={
-                        "detail": "The request contains invalid parameters or data."
+                        "detail": _("The request contains invalid parameters or data.")
                     },
                     status_codes=["400"]
                 )
@@ -235,14 +237,14 @@ class CommonAPIResponses:
     @staticmethod
     def unauthorized():
         return OpenApiResponse(
-            description="Authentication required",
+            description=_("Authentication required"),
             response=dict,
             examples=[
                 OpenApiExample(
-                    name="Unauthorized",
-                    summary="Missing or invalid authentication credentials",
+                    name=_("Unauthorized"),
+                    summary=_("Missing or invalid authentication credentials"),
                     value={
-                        "detail": "Authentication credentials were not provided."
+                        "detail": _("Authentication credentials were not provided.")
                     },
                     status_codes=["401"]
                 )
@@ -252,14 +254,14 @@ class CommonAPIResponses:
     @staticmethod
     def method_not_allowed():
         return OpenApiResponse(
-            description="Method not allowed",
+            description=_("Method not allowed"),
             response=dict,
             examples=[
                 OpenApiExample(
-                    name="Method Not Allowed",
-                    summary="HTTP method not supported",
+                    name=_("Method Not Allowed"),
+                    summary=_("HTTP method not supported"),
                     value={
-                        "detail": "Method not allowed for this endpoint."
+                        "detail": _("Method not allowed for this endpoint.")
                     },
                     status_codes=["405"]
                 )
@@ -269,14 +271,14 @@ class CommonAPIResponses:
     @staticmethod
     def conflict():
         return OpenApiResponse(
-            description="Resource conflict",
+            description=_("Resource conflict"),
             response=dict,
             examples=[
                 OpenApiExample(
-                    name="Conflict",
-                    summary="Resource conflict detected",
+                    name=_("Conflict"),
+                    summary=_("Resource conflict detected"),
                     value={
-                        "detail": "The request conflicts with the current state of the target resource."
+                        "detail": _("The request conflicts with the current state of the target resource.")
                     },
                     status_codes=["409"]
                 )
@@ -286,14 +288,14 @@ class CommonAPIResponses:
     @staticmethod
     def server_error():
         return OpenApiResponse(
-            description="Internal server error",
+            description=_("Internal server error"),
             response=dict,
             examples=[
                 OpenApiExample(
-                    name="Server Error",
-                    summary="Internal server error occurred",
+                    name=_("Server Error"),
+                    summary=_("Internal server error occurred"),
                     value={
-                        "detail": "An unexpected error occurred while processing the request."
+                        "detail": _("An unexpected error occurred while processing the request.")
                     },
                     status_codes=["500"]
                 )

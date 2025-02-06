@@ -25,7 +25,8 @@ class AppIndexView(APIView):
         responses={
             200: OpenApiResponse(
                 response=AppSerializer,
-                description="Successfully constructed the list of registered models"
+                description=_(
+                    "Successfully constructed the list of registered models")
             ),
             403: CommonAPIResponses.permission_denied(),
             401: CommonAPIResponses.unauthorized()

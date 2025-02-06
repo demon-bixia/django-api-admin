@@ -32,12 +32,14 @@ class ChangeListView(APIView):
         parameters=[ChangeListSerializer],
         responses={
             200: OpenApiResponse(
-                description="Retrieve a list of records with optional filtering and pagination",
+                description=_(
+                    "Retrieve a list of records with optional filtering and pagination"),
                 response=ChangelistResponseSerializer,
                 examples=[OpenApiExample(
-                    name="Success Response",
-                    summary="Example of a successful changelist retrieval",
-                    description="Returns a paginated list of records with optional filters applied.",
+                    name=_("Success Response"),
+                    summary=_("Example of a successful changelist retrieval"),
+                    description=_(
+                        "Returns a paginated list of records with optional filters applied."),
                     value=ChangeList,
                     status_codes=["200"],
                 )]

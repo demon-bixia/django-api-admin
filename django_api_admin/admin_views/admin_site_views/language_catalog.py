@@ -1,5 +1,5 @@
 
-# from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 import json
 
 from django.views.i18n import JSONCatalog
@@ -25,12 +25,14 @@ class LanguageCatalogView(APIView):
         responses={
             200: OpenApiResponse(
                 response=LanguageCatalogSerializer,
-                description="Successful retrieval of the language catalog.",
+                description=_("Successful retrieval of the language catalog."),
                 examples=[
                     OpenApiExample(
-                        name="Success Response",
-                        summary="Example of a successful language catalog request",
-                        description="return the translation string used in this app",
+                        name=_("Success Response"),
+                        summary=_(
+                            "Example of a successful language catalog request"),
+                        description=_(
+                            "return the translation string used in this app"),
                         value={
                             "catalog": {
                                 "AM": "ص",

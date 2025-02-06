@@ -29,12 +29,12 @@ class AdminLogView(APIView):
         responses={
             200: OpenApiResponse(
                 response=LogEntrySerializer(many=True),
-                description='Successfully retrieved admin log entries'
+                description=_('Successfully retrieved admin log entries')
             ),
             401: CommonAPIResponses.unauthorized(),
             403: CommonAPIResponses.permission_denied(),
         },
-        description='Retrieve a list of admin log entries',
+        description=_('Retrieve a list of admin log entries'),
         tags=['admin-log']
     )
     def get(self, request):

@@ -217,15 +217,16 @@ class ModelAdminTestCase(APITestCase, URLPatternsTestCase):
     def test_changelist_view(self):
         current_date = datetime.now()
 
-        date_hierarchy = f"date_joined__day={current_date.day}&date_joined__month={
-            current_date.month}&date_joined__year={current_date.year}"
+        date_hierarchy = f"date_joined__day={current_date.day}"
+        f"&date_joined__month={current_date.month}"
+        f"&date_joined__year={current_date.year}"
         ordering = "o=1.-2"
         search = "q=muhammad"
         filter = "is_vip__exact=1"
-        view_name = f"api_admin:{self.author_info[0]}_{
-            self.author_info[1]}_changelist"
-        url = f"{reverse(view_name)}?{date_hierarchy}&{filter}&{
-            ordering}&{search}"
+        view_name = f"api_admin:{self.author_info[0]}"
+        f"_{self.author_info[1]}_changelist"
+        url = f"{reverse(view_name)}?{date_hierarchy}&"
+        f"{filter}&{ordering}&{search}"
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)

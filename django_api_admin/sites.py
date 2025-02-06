@@ -35,6 +35,7 @@ class APIAdminSite():
     # optional views
     include_view_on_site_view = True
     include_root_view = True
+    include_swagger_ui_view = True
 
     # default permissions
     default_permission_classes = [IsAdminUser, ]
@@ -196,9 +197,7 @@ class APIAdminSite():
                  name='site_context'),
             path('admin_log/', self.get_admin_log_view(),
                  name='admin_log'),
-            path('schema/', self.get_schema_view(), name='schema'),
-            path('schema/swagger-ui/',
-                 self.get_docs_view(), name=self.swagger_url_name),
+            path('schema/', self.get_schema_view(), name='schema')
         ]
 
         # add the app index view
@@ -210,6 +209,11 @@ class APIAdminSite():
 
         self.site_urls = urlpatterns
 
+        # add the swagger-ui url
+        if self.include_swagger_ui_view:
+            urlpatterns.append(path('schema/swagger-ui/',
+                                    self.get_docs_view(),
+                                    name=self.swagger_url_name))
         # add view on site view
         if self.include_view_on_site_view:
             urlpatterns.append(path(
@@ -217,7 +221,7 @@ class APIAdminSite():
                 self.get_view_on_site_view(),
                 name='view_on_site',
             ))
-        # add api_root for browsable api.
+        # add api_root for browsable api
         if self.include_root_view:
             from django_api_admin.admin_views.admin_site_views.admin_api_root import AdminAPIRootView
 

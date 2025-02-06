@@ -24,13 +24,15 @@ class ViewOnSiteView(APIView):
     @extend_schema(
         responses={
             200: OpenApiResponse(
-                description="Successful retrieval of the object's view on site",
+                description=_(
+                    "Successful retrieval of the object's view on site"),
                 response=dict,
                 examples=[
                     OpenApiExample(
-                        name="Success Response",
+                        name=_("Success Response"),
                         summary="Example of a successful view on site response",
-                        description="Returns a URL where the object can be viewed on the site",
+                        description=_(
+                            "Returns a URL where the object can be viewed on the site"),
                         value={"url": "http://localhost:8000/api/author/1/"},
                         status_codes=["200"]
                     )

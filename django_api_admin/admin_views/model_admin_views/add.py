@@ -28,7 +28,8 @@ class AddView(APIView):
     @extend_schema(
         responses={
             200: OpenApiResponse(
-                description="Successfully returned the field attributes list",
+                description=_(
+                    "Successfully returned the field attributes list"),
                 response=FormFieldsSerializer,
                 examples=[
                     APIResponseExamples.field_attributes()

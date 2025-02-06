@@ -25,13 +25,14 @@ class DeleteView(APIView):
     @extend_schema(
         responses={
             200: OpenApiResponse(
-                description="Successfully deleted the selected objects",
+                description=_("Successfully deleted the selected objects"),
                 response=dict,
                 examples=[
                     OpenApiExample(
-                        name="Delete Success Response",
-                        summary="Example of a successful delete operation",
-                        description="Returns a success message after deleting the selected objects",
+                        name=_("Delete Success Response"),
+                        summary=_("Example of a successful delete operation"),
+                        description=_(
+                            "Returns a success message after deleting the selected objects"),
                         value={
                             "detail": "The object was deleted successfully."
                         },
@@ -80,13 +81,14 @@ class DeleteView(APIView):
     @extend_schema(
         responses={
             200: OpenApiResponse(
-                description="Successfully deleted the selected objects",
+                description=_("Successfully deleted the selected objects"),
                 response=dict,
                 examples=[
                     OpenApiExample(
-                        name="Delete Success Response",
-                        summary="Example of a successful delete operation",
-                        description="Returns a success message after deleting the selected objects",
+                        name=_("Delete Success Response"),
+                        summary=_("Example of a successful delete operation"),
+                        description=_(
+                            "Returns a success message after deleting the selected objects"),
                         value={
                             "detail": "The object was deleted successfully."
                         },
