@@ -16,7 +16,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/demon-bixia/django-api-admin">
-    <img src="assets/images/logo.png" alt="Logo" width="80" height="80">
+    <img src="assets/images/logo.png" alt="Logo" width="300" height="300">
   </a>
 
   <h3 align="center">Django API Admin</h3>
