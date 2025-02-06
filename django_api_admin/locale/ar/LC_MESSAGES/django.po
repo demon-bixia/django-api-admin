@@ -1,0 +1,671 @@
+# Django Admin Arabic Translations
+# Copyright (C) 2025 Django-API-Admin
+# This file is distributed under the same license as the Django package.
+# Your Name msbizzacc0unt@outlook.com, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: 1.0.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-02-06 05:13+0400\n"
+"PO-Revision-Date: 2025-02-03 17:49+0400\n"
+"Last-Translator: Muhammad Salah msbizzacc0unt@outlook.com\n"
+"Language-Team: Arabic msbizzacc0unt@outlook.com\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
+"&& n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#: actions.py:14
+#, python-format
+msgid "Delete selected %(verbose_name_plural)s"
+msgstr "حذف %(verbose_name_plural)s المحددة"
+
+#: actions.py:27
+#, python-format
+msgid "Cannot delete %(name)s"
+msgstr "لا يمكن حذف %(name)s"
+
+#: actions.py:38
+#, python-format
+msgid "Successfully deleted %s %s."
+msgstr "تم حذف %s %s بنجاح."
+
+#: admin_views/admin_site_views/admin_log.py:32
+msgid "Successfully retrieved admin log entries"
+msgstr "تم استرجاع إدخالات سجل الإدارة بنجاح."
+
+#: admin_views/admin_site_views/admin_log.py:37
+msgid "Retrieve a list of admin log entries"
+msgstr "استرجاع قائمة بإدخالات سجل الإدارة."
+
+#: admin_views/admin_site_views/admin_log.py:51
+msgid "Wrong ordering field set."
+msgstr "تم تعيين حقل ترتيب خاطئ."
+
+#: admin_views/admin_site_views/admin_log.py:59
+msgid "Bad filters."
+msgstr "فلاتر غير صحيحة."
+
+#: admin_views/admin_site_views/app_index.py:29
+msgid "Successfully constructed the list of registered models"
+msgstr "تم إنشاء قائمة النماذج المسجلة بنجاح."
+
+#: admin_views/admin_site_views/app_index.py:38
+msgid "invalid app_label"
+msgstr "تسمية التطبيق غير صالحة"
+
+#: admin_views/admin_site_views/app_index.py:43
+msgid "The requested admin page does not exist."
+msgstr "صفحة الإدارة المطلوبة غير موجودة."
+
+#: admin_views/admin_site_views/autocomplete.py:28
+#, fuzzy
+#| msgid "Successfully deleted %s %s."
+msgid "Successful autocomplete response"
+msgstr "استجابة الإكمال التلقائي ناجحة."
+
+#: admin_views/admin_site_views/autocomplete.py:32
+#: admin_views/admin_site_views/language_catalog.py:31
+#: admin_views/admin_site_views/obtain_token.py:50
+#: admin_views/admin_site_views/password_change.py:52
+#: admin_views/admin_site_views/view_on_site.py:32
+#: admin_views/model_admin_views/changelist.py:39
+#: admin_views/model_admin_views/handle_action.py:56 openapi.py:153
+msgid "Success Response"
+msgstr "استجابة ناجحة."
+
+#: admin_views/admin_site_views/autocomplete.py:34
+msgid "Example of a successful autocomplete response"
+msgstr "مثال على استجابة إكمال تلقائي ناجحة."
+
+#: admin_views/admin_site_views/autocomplete.py:55
+msgid "Endpoint for autocomplete functionality on model fields"
+msgstr "نقطة النهاية لوظيفة الإكمال التلقائي على حقول النموذج."
+
+#: admin_views/admin_site_views/autocomplete.py:116
+msgid "missing values app_label, model_name, and field_name"
+msgstr "القيم المفقودة: تسمية التطبيق، اسم النموذج، واسم الحقل"
+
+#: admin_views/admin_site_views/autocomplete.py:122
+msgid "source model not found"
+msgstr "لم يتم العثور على نموذج المصدر"
+
+#: admin_views/admin_site_views/autocomplete.py:127
+#, python-brace-format
+msgid ""
+"source field not found in source model {source_model._meta.verbose_name}"
+msgstr ""
+"لم يتم العثور على حقل المصدر في نموذج المصدر {source_model._meta."
+"verbose_name}"
+
+#: admin_views/admin_site_views/autocomplete.py:132
+#, python-brace-format
+msgid ""
+"unable to locate the related model using source field {source_field.name}"
+msgstr ""
+"غير قادر على تحديد موقع النموذج المرتبط باستخدام حقل المصدر {source_field."
+"name}"
+
+#: admin_views/admin_site_views/autocomplete.py:137
+msgid "the remote model is not registered in the admin"
+msgstr "النموذج البعيد غير مسجل في لوحة الإدارة"
+
+#: admin_views/admin_site_views/autocomplete.py:141
+#, python-format
+msgid "%s must have search_fields for the autocomplete_view.\""
+msgstr "%s يجب أن يحتوي على search_fields لعرض الإكمال التلقائي."
+
+#: admin_views/admin_site_views/language_catalog.py:28
+msgid "Successful retrieval of the language catalog."
+msgstr "تم استرجاع كتالوج اللغة بنجاح."
+
+#: admin_views/admin_site_views/language_catalog.py:33
+msgid "Example of a successful language catalog request"
+msgstr "مثال على طلب كتالوج لغة ناجح."
+
+#: admin_views/admin_site_views/language_catalog.py:35
+msgid "return the translation string used in this app"
+msgstr "إرجاع سلسلة الترجمة المستخدمة في هذا التطبيق."
+
+#: admin_views/admin_site_views/obtain_token.py:28
+#: admin_views/admin_site_views/password_change.py:26
+#: admin_views/model_admin_views/add.py:32
+#: admin_views/model_admin_views/change.py:35
+#: admin_views/model_admin_views/change.py:132
+#: admin_views/model_admin_views/change.py:155
+msgid "Successfully returned the field attributes list"
+msgstr "تم إرجاع قائمة سمات الحقل بنجاح."
+
+#: admin_views/admin_site_views/obtain_token.py:46
+msgid "Successful token obtainment"
+msgstr "تم الحصول على الرمز بنجاح."
+
+#: admin_views/admin_site_views/obtain_token.py:52
+msgid "Example of a successful token obtain response"
+msgstr "مثال على استجابة ناجحة للحصول على الرمز."
+
+#: admin_views/admin_site_views/obtain_token.py:54
+msgid "Returns a pair of tokens containing both the refresh and access tokens"
+msgstr "إرجاع زوج من الرموز يحتوي على رموز التحديث والوصول."
+
+#: admin_views/admin_site_views/obtain_token.py:79
+msgid "you are logged in successfully"
+msgstr "تم تسجيل الدخول بنجاح"
+
+#: admin_views/admin_site_views/password_change.py:48
+msgid "Successful change of the user's password"
+msgstr "تم تغيير كلمة مرور المستخدم بنجاح."
+
+#: admin_views/admin_site_views/password_change.py:54
+msgid "Example of a successful password change response"
+msgstr "مثال على استجابة ناجحة لتغيير كلمة المرور."
+
+#: admin_views/admin_site_views/password_change.py:56
+msgid "Returns a message confirming the password change"
+msgstr "إرجاع رسالة تؤكد تغيير كلمة المرور."
+
+#: admin_views/admin_site_views/password_change.py:75
+msgid "Your password was changed"
+msgstr "تم تغيير كلمة المرور الخاصة بك"
+
+#: admin_views/admin_site_views/user_information.py:20
+msgid "Successful retrieval of user information"
+msgstr "تم استرجاع معلومات المستخدم بنجاح."
+
+#: admin_views/admin_site_views/user_information.py:24
+msgid "User Information"
+msgstr "معلومات المستخدم"
+
+#: admin_views/admin_site_views/user_information.py:26
+msgid "Example of a successful user information retrieval response"
+msgstr "مثال على استجابة ناجحة لاسترجاع معلومات المستخدم."
+
+#: admin_views/admin_site_views/user_information.py:28
+msgid "Returns details of the user's information"
+msgstr "إرجاع تفاصيل معلومات المستخدم."
+
+#: admin_views/admin_site_views/view_on_site.py:28
+msgid "Successful retrieval of the object's view on site"
+msgstr "تم استرجاع عرض الكائن على الموقع بنجاح."
+
+#: admin_views/admin_site_views/view_on_site.py:35
+msgid "Returns a URL where the object can be viewed on the site"
+msgstr "إرجاع عنوان URL حيث يمكن عرض الكائن على الموقع."
+
+#: admin_views/admin_site_views/view_on_site.py:51
+#, python-format
+msgid "Content type %(ct_id)s object has no associated model"
+msgstr "نوع المحتوى %(ct_id)s لا يحتوي على نموذج مرتبط"
+
+#: admin_views/admin_site_views/view_on_site.py:57
+#, python-format
+msgid "Content type %(ct_id)s object %(obj_id)s doesn’t exist"
+msgstr "نوع المحتوى %(ct_id)s الكائن %(obj_id)s غير موجود"
+
+#: admin_views/admin_site_views/view_on_site.py:65
+#, python-format
+msgid "%(ct_name)s objects don’t have a get_absolute_url() method"
+msgstr "كائنات %(ct_name)s لا تحتوي على دالة get_absolute_url()"
+
+#: admin_views/model_admin_views/add.py:73
+msgid "The {opts.verbose_name} “{str(new_object)}” was added successfully."
+msgstr "تمت إضافة {opts.verbose_name} “{str(new_object)}” بنجاح."
+
+#: admin_views/model_admin_views/change.py:75
+msgid ""
+"The {opts.verbose_name} “{str(updated_object)}” was changed successfully."
+msgstr "تم تغيير {opts.verbose_name} “{str(updated_object)}” بنجاح."
+
+#: admin_views/model_admin_views/change.py:136
+#: admin_views/model_admin_views/change.py:159
+msgid "Update Success Response"
+msgstr "استجابة نجاح التحديث."
+
+#: admin_views/model_admin_views/change.py:138
+#: admin_views/model_admin_views/change.py:161
+msgid "Example of a successful Update operation response"
+msgstr "مثال على استجابة ناجحة لعملية التحديث."
+
+#: admin_views/model_admin_views/change.py:195
+#: admin_views/model_admin_views/delete.py:54
+#: admin_views/model_admin_views/detail.py:25
+#, python-format
+msgid "The field %s cannot be referenced."
+msgstr "لا يمكن الإشارة إلى الحقل %s."
+
+#: admin_views/model_admin_views/change.py:202
+#: admin_views/model_admin_views/delete.py:60
+#: admin_views/model_admin_views/detail.py:32
+#: admin_views/model_admin_views/history.py:29
+#, python-format
+msgid "%(name)s with ID “%(key)s” doesn't exist. Perhaps it was deleted?"
+msgstr "%(name)s بالمعرف “%(key)s” غير موجود. ربما تم حذفه؟"
+
+#: admin_views/model_admin_views/changelist.py:36
+msgid "Retrieve a list of records with optional filtering and pagination"
+msgstr "استرجاع قائمة بالسجلات مع إمكانية التصفية والتقسيم إلى صفحات."
+
+#: admin_views/model_admin_views/changelist.py:40
+msgid "Example of a successful changelist retrieval"
+msgstr "مثال على استرجاع ناجح لقائمة التغييرات."
+
+#: admin_views/model_admin_views/changelist.py:42
+msgid "Returns a paginated list of records with optional filters applied."
+msgstr "إرجاع قائمة بالسجلات مقسمة إلى صفحات مع تطبيق الفلاتر الاختيارية."
+
+#: admin_views/model_admin_views/delete.py:28
+#: admin_views/model_admin_views/delete.py:84
+#, fuzzy
+#| msgid "Successfully deleted %s %s."
+msgid "Successfully deleted the selected objects"
+msgstr "تم حذف الكائنات المحددة بنجاح."
+
+#: admin_views/model_admin_views/delete.py:32
+#: admin_views/model_admin_views/delete.py:88
+msgid "Delete Success Response"
+msgstr "استجابة نجاح الحذف."
+
+#: admin_views/model_admin_views/delete.py:33
+#: admin_views/model_admin_views/delete.py:89
+msgid "Example of a successful delete operation"
+msgstr "مثال على عملية حذف ناجحة."
+
+#: admin_views/model_admin_views/delete.py:35
+#: admin_views/model_admin_views/delete.py:91
+msgid "Returns a success message after deleting the selected objects"
+msgstr "إرجاع رسالة نجاح بعد حذف الكائنات المحددة."
+
+#: admin_views/model_admin_views/delete.py:76
+#, python-format
+msgid "The %(name)s “%(obj)s” was deleted successfully."
+msgstr "تم حذف %(name)s “%(obj)s” بنجاح."
+
+#: admin_views/model_admin_views/handle_action.py:52
+msgid "Action executed successfully on selected objects"
+msgstr "تم تنفيذ الإجراء بنجاح على الكائنات المحددة."
+
+#: admin_views/model_admin_views/handle_action.py:57
+msgid "Example of a successful action execution"
+msgstr "مثال على تنفيذ ناجح للإجراء."
+
+#: admin_views/model_admin_views/handle_action.py:59
+msgid ""
+"Returns a success message after performing the selected action on chosen "
+"objects"
+msgstr "إرجاع رسالة نجاح بعد تنفيذ الإجراء المحدد على الكائنات المختارة."
+
+#: admin_views/model_admin_views/handle_action.py:87
+msgid ""
+"Items must be selected in order to perform actions on them. No items have "
+"been changed."
+msgstr "يجب تحديد العناصر لتنفيذ الإجراءات عليها. لم يتم تغيير أي عناصر."
+
+#: admin_views/model_admin_views/handle_action.py:99
+msgid "action was performed successfully"
+msgstr "تم تنفيذ الإجراء بنجاح"
+
+#: apps.py:13
+msgid "Administration"
+msgstr "الإدارة"
+
+#: filters.py:118 filters.py:235 filters.py:280 filters.py:323 filters.py:466
+#: filters.py:544
+msgid "All"
+msgstr "الكل"
+
+#: filters.py:281
+msgid "Yes"
+msgstr "نعم"
+
+#: filters.py:282
+msgid "No"
+msgstr "لا"
+
+#: filters.py:297
+msgid "Unknown"
+msgstr "غير معروف"
+
+#: filters.py:377
+msgid "Any date"
+msgstr "أي تاريخ"
+
+#: filters.py:379
+msgid "Today"
+msgstr "اليوم"
+
+#: filters.py:386
+msgid "Past 7 days"
+msgstr "آخر 7 أيام"
+
+#: filters.py:393
+msgid "This month"
+msgstr "هذا الشهر"
+
+#: filters.py:400
+msgid "This year"
+msgstr "هذا العام"
+
+#: filters.py:410
+msgid "No date"
+msgstr "لا يوجد تاريخ"
+
+#: filters.py:411
+msgid "Has date"
+msgstr "يوجد تاريخ"
+
+#: filters.py:545
+msgid "Empty"
+msgstr "فارغ"
+
+#: filters.py:546
+msgid "Not empty"
+msgstr "غير فارغ"
+
+#: hooks.py:25
+#, fuzzy
+#| msgid "Django site admin"
+msgid "Django API Admin"
+msgstr "إدارة موقع Django"
+
+#: hooks.py:26
+msgid ""
+"A rewrite of django.contrib.admin as a Restful API, intended for usein the "
+"process of creating custom admin panels using frontend frameworks likereact, "
+"and vue while maintaining an API similar to django.contrib.admin."
+msgstr ""
+"إعادة كتابة django.contrib.admin كواجهة برمجة تطبيقات RESTful، تهدف إلى "
+"الاستخدام في عملية إنشاء لوحات إدارة مخصصة باستخدام أطر عمل الواجهة الأمامية "
+"مثل React، و Vue مع الحفاظ على واجهة برمجة تطبيقات مشابهة لـ django.contrib."
+"admin."
+
+#: models.py:19
+msgid "Addition"
+msgstr "إضافة"
+
+#: models.py:20
+msgid "Change"
+msgstr "تغيير"
+
+#: models.py:21
+msgid "Deletion"
+msgstr "حذف"
+
+#: models.py:51
+msgid "action time"
+msgstr "وقت الإجراء"
+
+#: models.py:58
+msgid "user"
+msgstr "المستخدم"
+
+#: models.py:64
+msgid "content type"
+msgstr "نوع المحتوى"
+
+#: models.py:69
+msgid "object id"
+msgstr "معرف الكائن"
+
+#. Translators: 'repr' means representation
+#. (https://docs.python.org/library/functions.html#repr)
+#: models.py:72
+msgid "object repr"
+msgstr "تمثيل الكائن"
+
+#: models.py:74
+msgid "action flag"
+msgstr "علامة الإجراء"
+
+#: models.py:77
+msgid "change message"
+msgstr "رسالة التغيير"
+
+#: models.py:82
+msgid "log entry"
+msgstr "إدخال السجل"
+
+#: models.py:83
+msgid "log entries"
+msgstr "إدخالات السجل"
+
+#: models.py:92
+#, python-format
+msgid "Added “%(object)s”."
+msgstr "تمت إضافة “%(object)s”."
+
+#: models.py:94
+#, python-format
+msgid "Changed “%(object)s” — %(changes)s"
+msgstr "تم تغيير “%(object)s” — %(changes)s"
+
+#: models.py:99
+#, python-format
+msgid "Deleted “%(object)s.”"
+msgstr "تم حذف “%(object)s”."
+
+#: models.py:101
+msgid "LogEntry Object"
+msgstr "كائن LogEntry"
+
+#: models.py:130
+#, python-brace-format
+msgid "Added {name} “{object}”."
+msgstr "تمت إضافة {name} “{object}”."
+
+#: models.py:135
+msgid "Added."
+msgstr "تمت الإضافة."
+
+#: models.py:143
+msgid "and"
+msgstr "و"
+
+#: models.py:150
+#, python-brace-format
+msgid "Changed {fields} for {name} “{object}”."
+msgstr "تم تغيير {fields} لـ {name} “{object}”."
+
+#: models.py:156
+#, python-brace-format
+msgid "Changed {fields}."
+msgstr "تم تغيير {fields}."
+
+#: models.py:166
+#, python-brace-format
+msgid "Deleted {name} “{object}”."
+msgstr "تم حذف {name} “{object}”."
+
+#: models.py:173
+msgid "No fields changed."
+msgstr "لم يتم تغيير أي حقول."
+
+#: openapi.py:154
+msgid "Example of a successful field attribute response"
+msgstr "مثال على استجابة ناجحة لسمات الحقل."
+
+#: openapi.py:156
+msgid "Retrieve form field attributes for the password change endpoint"
+msgstr "استرجاع سمات حقل النموذج لنقطة نهاية تغيير كلمة المرور."
+
+#: openapi.py:189
+msgid "Permission denied"
+msgstr "تم رفض الإذن."
+
+#: openapi.py:193
+msgid "Permission Denied"
+msgstr "تم رفض الإذن."
+
+#: openapi.py:194
+msgid "Permission denied response"
+msgstr "استجابة رفض الإذن."
+
+#: openapi.py:196
+msgid "You do not have permission to perform this action."
+msgstr "ليس لديك إذن لتنفيذ هذا الإجراء."
+
+#: openapi.py:206
+#, fuzzy
+#| msgid "source model not found"
+msgid "Resource not found"
+msgstr "لم يتم العثور على المورد."
+
+#: openapi.py:210
+msgid "Not Found"
+msgstr "غير موجود."
+
+#: openapi.py:211
+#, fuzzy
+#| msgid "source model not found"
+msgid "Resource not found response"
+msgstr "استجابة لم يتم العثور على المورد."
+
+#: openapi.py:213
+#, fuzzy
+#| msgid "The requested admin page does not exist."
+msgid "The requested resource was not found."
+msgstr "المورد المطلوب غير موجود."
+
+#: openapi.py:223
+msgid "Bad request"
+msgstr "طلب غير صالح."
+
+#: openapi.py:227
+msgid "Bad Request"
+msgstr "طلب غير صالح."
+
+#: openapi.py:228
+msgid "Invalid request parameters or data"
+msgstr "معلمات أو بيانات الطلب غير صالحة."
+
+#: openapi.py:230
+msgid "The request contains invalid parameters or data."
+msgstr "الطلب يحتوي على معلمات أو بيانات غير صالحة."
+
+#: openapi.py:240
+msgid "Authentication required"
+msgstr "المصادقة مطلوبة."
+
+#: openapi.py:244
+msgid "Unauthorized"
+msgstr "غير مصرح."
+
+#: openapi.py:245
+msgid "Missing or invalid authentication credentials"
+msgstr "بيانات اعتماد المصادقة مفقودة أو غير صالحة."
+
+#: openapi.py:247
+msgid "Authentication credentials were not provided."
+msgstr "لم يتم توفير بيانات اعتماد المصادقة."
+
+#: openapi.py:257
+msgid "Method not allowed"
+msgstr "الطريقة غير مسموح بها."
+
+#: openapi.py:261
+msgid "Method Not Allowed"
+msgstr "الطريقة غير مسموح بها."
+
+#: openapi.py:262
+msgid "HTTP method not supported"
+msgstr "طريقة HTTP غير مدعومة."
+
+#: openapi.py:264
+msgid "Method not allowed for this endpoint."
+msgstr "الطريقة غير مسموح بها لهذه النقطة النهائية."
+
+#: openapi.py:274
+msgid "Resource conflict"
+msgstr "تعارض في المورد."
+
+#: openapi.py:278
+msgid "Conflict"
+msgstr "تعارض."
+
+#: openapi.py:279
+msgid "Resource conflict detected"
+msgstr "تم اكتشاف تعارض في المورد."
+
+#: openapi.py:281
+msgid "The request conflicts with the current state of the target resource."
+msgstr "الطلب يتعارض مع الحالة الحالية للمورد المستهدف."
+
+#: openapi.py:291
+msgid "Internal server error"
+msgstr "خطأ في الخادم الداخلي."
+
+#: openapi.py:295
+msgid "Server Error"
+msgstr "خطأ في الخادم."
+
+#: openapi.py:296
+msgid "Internal server error occurred"
+msgstr "حدث خطأ في الخادم الداخلي."
+
+#: openapi.py:298
+msgid "An unexpected error occurred while processing the request."
+msgstr "حدث خطأ غير متوقع أثناء معالجة الطلب."
+
+#: serializers.py:37
+#, fuzzy, python-format
+#| msgid ""
+#| "Please enter the correct %(username)s and password for a staff account. "
+#| "Note that both fields may be case-sensitive."
+msgid ""
+"Please enter the correct %(username)s and password for a staff account. Note "
+"that both fields may be case-sensitive. "
+msgstr ""
+"يرجى إدخال %(username)s وكلمة المرور الصحيحة لحساب الموظف. لاحظ أن كلا "
+"الحقلين قد يكونان حساسين لحالة الأحرف."
+
+#: serializers.py:41
+msgid ""
+"Please login with an account that has permissions to access the admin site"
+msgstr "يرجى تسجيل الدخول بحساب لديه أذونات للوصول إلى موقع الإدارة"
+
+#: serializers.py:43
+msgid "This account is inactive."
+msgstr "هذا الحساب غير نشط."
+
+#: serializers.py:100
+msgid "Old password"
+msgstr "كلمة المرور القديمة"
+
+#: serializers.py:106
+msgid "New Password"
+msgstr "كلمة المرور الجديدة"
+
+#: serializers.py:112
+msgid "New password confirmation"
+msgstr "تأكيد كلمة المرور الجديدة"
+
+#: serializers.py:122
+msgid "The two password fields didn’t match."
+msgstr "حقلا كلمة المرور غير متطابقين."
+
+#: serializers.py:123
+msgid "Your old password was entered incorrectly. Please enter it again."
+msgstr "تم إدخال كلمة المرور القديمة بشكل غير صحيح. يرجى إدخالها مرة أخرى."
+
+#: serializers.py:182
+msgid "finish must occur after start"
+msgstr "يجب أن يحدث الانتهاء بعد البدء"
+
+#: sites.py:54
+msgid "Django site admin"
+msgstr "إدارة موقع Django"
+
+#: sites.py:57
+msgid "Django administration"
+msgstr "إدارة Django"
+
+#: sites.py:60
+msgid "Site administration"
+msgstr "إدارة الموقع"
+
+#: utils/validate_inline_field_names.py:21
+msgid "there is no inline admin with this name in model admin"
+msgstr "لا يوجد إدارة مضمنة بهذا الاسم في إدارة النموذج"
