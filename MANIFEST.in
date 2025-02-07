@@ -1,4 +1,0 @@
-include LICENSE
-include README.md
-recursive-include django_api_admin/ *
-prune __pycache__

@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "django-api-admin"  # Your library's name (lowercase, no hyphens)
+version = "1.2.1"  # Initial version (follow semantic versioning)
+description = "A RESTful API implementation of django.contrib.admin, designed for writing custom frontends."
+authors = [{name = "Muhammad Salah", email = "msbizzacc0unt@outlook.com"}]
+license = {file = "LICENSE"}  # Or specify directly
+readme = "README.md"
+classifiers = [  # Important for PyPI search
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",  # Or your chosen license
+    "Operating System :: OS Independent",
+]
+dependencies = [  # Dependencies your library needs
+    "django",
+    "djangorestframework",
+    "djangorestframework-simplejwt",
+    "drf-spectacular"
+]
+
+[project.optional-dependencies]
+dev = ["django-cors-headers"]
+
+[project.urls]
+Github = "https://github.com/demon-bixia/django-api-admin"
+
+[tool.setuptools]
+include-package-data = true  # This will include everything matched by MANIFEST.in
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = [
+    "README.md",
+    "LICENSE",
+    "django_api_admin*",
+    "assets*",
+]
+exclude = [
+    "__pycache__/*",
+    "**/__pycache__/*"
+]
