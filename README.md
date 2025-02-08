@@ -29,9 +29,9 @@
     <!-- <br /> -->
     <!-- <a href="https://github.com/othneildrew/Best-README-Template">View Demo</a>
     &middot; -->
-    <a href="https://github.com/othneildrew/Best-README-Template/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
+    <a href="https://github.com/demon-bixia/django-api-admin/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
     &middot;
-    <a href="https://github.com/othneildrew/Best-README-Template/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
+    <a href="https://github.com/demon-bixia/django-api-admin/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
   </p>
 </div>
 
@@ -302,7 +302,7 @@ This section is dedicated to recognizing the valuable resources and contribution
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/othneildrew/Best-README-Template.svg?style=for-the-badge
+[contributors-shield]: https://img.shields.io/github/contributors/demon-bixia/django-api-admin.svg?style=for-the-badge
 [contributors-url]: https://github.com/demon-bixia/django-api-admin/graphs/contributors
 
 [forks-shield]: https://img.shields.io/github/forks/demon-bixia/django-api-admin.svg?style=for-the-badge
