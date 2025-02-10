@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "django-api-admin"  # Your library's name (lowercase, no hyphens)
-version = "1.2.1"  # Initial version (follow semantic versioning)
+version = "1.2.2"  # Initial version (follow semantic versioning)
 description = "A RESTful API implementation of django.contrib.admin, designed for writing custom frontends."
 authors = [{name = "Muhammad Salah", email = "msbizzacc0unt@outlook.com"}]
 license = {file = "LICENSE"}  # Or specify directly
