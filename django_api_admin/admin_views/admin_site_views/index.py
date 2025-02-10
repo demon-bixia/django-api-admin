@@ -20,6 +20,7 @@ class IndexView(APIView):
     admin_site = None
 
     @extend_schema(
+        operation_id="admin_root",
         responses={
             200: AppListSerializer,
             403: CommonAPIResponses.permission_denied(),

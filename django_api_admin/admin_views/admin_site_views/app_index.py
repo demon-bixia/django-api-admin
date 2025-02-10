@@ -21,6 +21,7 @@ class AppIndexView(APIView):
     admin_site = None
 
     @extend_schema(
+        operation_id="app_index",
         request=AppIndexSerializer,
         responses={
             200: OpenApiResponse(
