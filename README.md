@@ -29,9 +29,9 @@
     <!-- <br /> -->
     <!-- <a href="https://github.com/othneildrew/Best-README-Template">View Demo</a>
     &middot; -->
-    <a href="https://github.com/othneildrew/Best-README-Template/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
+    <a href="https://github.com/demon-bixia/django-api-admin/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
     &middot;
-    <a href="https://github.com/othneildrew/Best-README-Template/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
+    <a href="https://github.com/demon-bixia/django-api-admin/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
   </p>
 </div>
 
@@ -164,6 +164,16 @@ This guide will walk you through the steps to integrate `django-api-admin` into 
    )
    CORS_ALLOW_CREDENTIALS = True
    ```
+5. **Add the modify_schema hook** used to tag paths in the openapi schema  
+   ```py
+   # settings.py
+   SPECTACULAR_SETTINGS = {
+       "POSTPROCESSING_HOOKS": [
+           'drf_spectacular.hooks.postprocess_schema_enums',
+           'django_api_admin.hooks.modify_schema'
+       ]
+   }
+   ```
 
 Thats it you are now ready to register your models and implement your django admin frontend!
 
@@ -209,8 +219,11 @@ This section provides a simple example on how to use django-api-admin. If you're
    from django.urls import path
    from django_api_admin.sites import site
 
+   # the admin site needs to know the name of the url prefix in this case "admin/"
+   # the default is just the admin site's name which is "admin" + "/" 
+   # for the default admin site
    urlpatterns = [
-      path('api_admin/', site.urls),
+      path('admin/', site.urls),
    ]
    ```
 
@@ -293,6 +306,7 @@ This section is dedicated to recognizing the valuable resources and contribution
 * [Simple JWT](https://github.com/jazzband/djangorestframework-simplejwt/tree/master)
 * [Django Cors Headers](https://github.com/adamchainz/django-cors-headers)
 * [DRF Spectacular](https://github.com/tfranzel/drf-spectacular)
+* [Django Restful Admin](https://github.com/amirasaran/django-restful-admin)
 * [Best README Template](https://github.com/othneildrew/Best-README-Template)
 * [QODO AI](https://www.qodo.ai/)
 
@@ -302,7 +316,7 @@ This section is dedicated to recognizing the valuable resources and contribution
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/othneildrew/Best-README-Template.svg?style=for-the-badge
+[contributors-shield]: https://img.shields.io/github/contributors/demon-bixia/django-api-admin.svg?style=for-the-badge
 [contributors-url]: https://github.com/demon-bixia/django-api-admin/graphs/contributors
 
 [forks-shield]: https://img.shields.io/github/forks/demon-bixia/django-api-admin.svg?style=for-the-badge

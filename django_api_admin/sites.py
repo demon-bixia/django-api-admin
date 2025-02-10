@@ -501,7 +501,7 @@ class DefaultAdminSite(LazyObject):
     def _setup(self):
         AdminSiteClass = import_string(
             apps.get_app_config("django_api_admin").default_site)
-        self._wrapped = AdminSiteClass(name='default_api_admin')
+        self._wrapped = AdminSiteClass(name='admin')
 
     def __repr__(self):
         return repr(self._wrapped)
