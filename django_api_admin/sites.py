@@ -63,7 +63,7 @@ class APIAdminSite():
     site_url = "/"
 
     # the authentication class used by the admin views
-    authentication_classes = []
+    authentication_classes = None
 
     enable_nav_sidebar = True
 
@@ -85,7 +85,8 @@ class APIAdminSite():
         self.url_prefix = self.url_prefix or f'/{name}'
 
         # set the default authentication class
-        self.authentication_classes = [JWTAuthentication,]
+        self.authentication_classes = self.authentication_classes or [
+            JWTAuthentication,]
 
         # set default serializers
         self.token_serializer = api_serializers.ObtainTokenSerializer
