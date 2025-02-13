@@ -68,7 +68,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![Product Name Screen Shot][product-screenshot]](https://example.com)
+[![Product Name Screen Shot][product-screenshot]](https://github.com/demon-bixia/django-api-admin)
 
 The Django API Admin project is a RESTful API implementation of the `django.contrib.admin` module, designed to facilitate the creation of custom frontends. This project aims to provide developers with a robust and flexible API that mirrors the functionality of Django's built-in admin interface, allowing for seamless integration with modern web applications.
 
@@ -244,7 +244,7 @@ This section provides a simple example on how to use django-api-admin. If you're
 - [ ] Oauth support
 - [ ] Multi-language Support
     - [ ] Arabic
-    - [ ] Spanish
+    - [x] English
 
 See the [open issues](https://github.com/demon-bixia/django-api-admin/issues) for a full list of proposed features (and known issues).
 
