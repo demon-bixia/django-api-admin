@@ -308,7 +308,6 @@ This section is dedicated to recognizing the valuable resources and contribution
 * [DRF Spectacular](https://github.com/tfranzel/drf-spectacular)
 * [Django Restful Admin](https://github.com/amirasaran/django-restful-admin)
 * [Best README Template](https://github.com/othneildrew/Best-README-Template)
-* [QODO AI](https://www.qodo.ai/)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
